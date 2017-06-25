@@ -11,11 +11,14 @@ import (
 	"gphotosuploader/utils"
 	"gphotosuploader/api"
 	"bufio"
+	"io/ioutil"
+	"strconv"
 )
 
 var (
 	// CLI arguments
 	cookiesFile string
+	numberFile string
 	filesToUpload utils.FilesToUpload
 	directoriesToWatch utils.DirectoriesToWatch
 	uploadedListFile string
@@ -27,12 +30,14 @@ var (
 
 	// Statistic
 	uploadedFilesCount = 0
+	ignoredCount = 0
 	errorsCount = 0
 )
 
 // Parse CLI arguments
 func initCliArguments() {
 	flag.StringVar(&cookiesFile, "cookies", "cookies.json", "File with the cookies to authenticated the requests")
+	flag.StringVar(&numberFile, "number", "number", "File that constains the number used to enable the image")
 	flag.Var(&filesToUpload, "upload", "File or directory to upload")
 	flag.StringVar(&uploadedListFile, "uploadedList", "uploaded.txt", "List to already uploaded files")
 	flag.IntVar(&maxConcurrentUploads, "maxConcurrent", 1, "Number of max concurrent uploads")
@@ -68,13 +73,17 @@ func handleUploaderEvents(exiting chan bool) {
 			uploadedFilesCount++
 			log.Printf("Upload of '%v' completed\n", info.Name)
 
-		// Update the upload completed file
+			// Update the upload completed file
 			if file, err := os.OpenFile(uploadedListFile, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666); err != nil {
 				log.Println("Can't update the uploaded file list")
 			} else {
 				file.WriteString(fmt.Sprintf("%v\n", info.FileToUpload))
 				file.Close()
 			}
+
+		case info := <- uploader.IgnoredUploads:
+			ignoredCount++
+			log.Printf("Not uploading '%v', it's already been uploaded!\n", info.FileToUpload)
 
 		case err := <-uploader.Errors:
 			log.Printf("Upload error: %v\n", err)
@@ -142,6 +151,18 @@ func main() {
 	}
 	credentials.SetAPIToken(token)
 
+	// Read the enable number
+	content, err := ioutil.ReadFile(numberFile)
+	if err != nil {
+		panic(err)
+	}
+	number, err := strconv.Atoi(string(content))
+	if err != nil {
+		log.Panic("Can'r read number from number file")
+	}
+	credentials.SetEnableNumber(number)
+
+
 	// Create the uploader
 	uploader, err = utils.NewUploader(credentials, maxConcurrentUploads)
 	if err != nil {
@@ -186,5 +207,5 @@ func main() {
 
 	stopHandler <- true
 	<-stopHandler
-	log.Printf("Done (%v files uploaded, %v errors)", uploadedFilesCount, errorsCount)
+	log.Printf("Done (%v files uploaded, %v files ignored, %v errors)", uploadedFilesCount, ignoredCount, errorsCount)
 }

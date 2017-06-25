@@ -5,7 +5,6 @@ import (
 	"gphotosuploader/auth"
 	"gphotosuploader/api"
 	"sync"
-	"log"
 )
 
 type ConcurrentUploader struct {
@@ -17,11 +16,12 @@ type ConcurrentUploader struct {
 	// Map of uploaded files (used as a set)
 	uploadedFiles     map[string]bool
 
-	waitingGroup sync.WaitGroup
-	waiting bool
+	waitingGroup      sync.WaitGroup
+	waiting           bool
 
-	CompletedUploads chan *api.UploadOptions
-	Errors chan error
+	CompletedUploads  chan *api.UploadOptions
+	IgnoredUploads    chan *api.UploadOptions
+	Errors            chan error
 }
 
 // Creates a new ConcurrentUploader using the specified credentials. The second argument is the maximum number
@@ -39,6 +39,7 @@ func NewUploader (credentials auth.Credentials, maxConcurrentUploads int) (*Conc
 		uploadedFiles: make(map[string]bool),
 
 		CompletedUploads: make(chan *api.UploadOptions),
+		IgnoredUploads: make(chan *api.UploadOptions),
 		Errors: make(chan error),
 	}, nil
 }
@@ -59,7 +60,7 @@ func (u *ConcurrentUploader) EnqueueUpload(options *api.UploadOptions) error {
 		return errors.New("Can't add new uploads when waiting")
 	}
 	if _, uploaded := u.uploadedFiles[options.FileToUpload]; uploaded {
-		log.Printf("Not uploading '%v', it's already been uploaded!\n", options.FileToUpload)
+		u.IgnoredUploads <- options
 		return nil
 	}
 

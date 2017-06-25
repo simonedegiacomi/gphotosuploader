@@ -13,6 +13,7 @@ import (
 type CookieCredentials struct {
 	client *http.Client
 	APIToken string
+	EnableToken int
 }
 
 func NewCookieCredentialsFromJson(in io.Reader) (*CookieCredentials, error) {
@@ -54,4 +55,12 @@ func (c *CookieCredentials) GetAPIToken() string {
 
 func (c *CookieCredentials) SetAPIToken(token string) {
 	c.APIToken = token
+}
+
+func (c *CookieCredentials) GetEnableNumber() int {
+	return c.EnableToken
+}
+
+func (c *CookieCredentials) SetEnableNumber(number int) {
+	c.EnableToken = number
 }
