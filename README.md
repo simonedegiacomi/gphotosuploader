@@ -15,7 +15,7 @@ other kind of issues are at your own risk.
 ### Standalone tool
 To use G Photos Uploader as a standalone tool you need to create two files:
 - cookies.json: A JSON file that contains cookies to authenticate the HTTPS requests to upload the images. An example of
-the file can be found [here](examples/cookies.json);
+the file can be found [here](examples/cookies-sample.json);
 - number: A simple text file with only one line with a special number. [Here](documentation/how-to-authenticate.md) you
 can read more about how to get it;
 
