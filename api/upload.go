@@ -20,9 +20,16 @@ const (
 
 // Structure that contains the Upload options
 type UploadOptions struct {
-	FileToUpload *os.File
+	// Path  of the file to upload
+	FileToUpload string
+
+	// Name of the photo
 	Name         string
+
+	// Timestamp of the photo
 	Timestamp    int64
+
+	// Size of the photo
 	FileSize     int64
 }
 
@@ -39,14 +46,14 @@ type Upload struct {
 func NewUpload(options *UploadOptions, credentials auth.Credentials) (*Upload, error) {
 	if options.FileSize <= 0 {
 		// Read file information to get the file size
-		fileInfo, err := options.FileToUpload.Stat()
+		fileInfo, err := os.Stat(options.FileToUpload)
 		if err != nil {
 			return nil, errors.New("Can't read stat of the file to upload")
 		}
 		options.FileSize = fileInfo.Size()
 	}
 	if options.Name == "" {
-		options.Name = options.FileToUpload.Name()
+		options.Name = options.FileToUpload
 	}
 	if options.Timestamp < 0 {
 		options.Timestamp = time.Now().Unix()
@@ -104,20 +111,6 @@ func (u *Upload) requestUploadUrl() error {
 						Size: fmt.Sprintf("%v", u.Options.FileSize),
 					},
 				},
-				//InlinedField{
-				//	Inlined: InlinedFieldObject{
-				//		Name: "sha1",
-				//		Content: "0elHPwFYiuiWkbUmPZMx8fFO4RM",
-				//		ContentType: "text/plain",
-				//	},
-				//},
-				//InlinedField{
-				//	Inlined: InlinedFieldObject{
-				//		Name: "upload_media_metadata_base64",
-				//		Content: "CAIQARgBIAM465VK",
-				//		ContentType: "text/plain",
-				//	},
-				//},
 			},
 		},
 	}
@@ -160,8 +153,15 @@ func (u *Upload) uploadFile() (*UploadImageResponse, error) {
 		return nil, errors.New("The url field is empty, make sure to call requestUploadUrl first")
 	}
 
+	// Open the file of the photo to upload
+	file, err := os.Open(u.Options.FileToUpload)
+	if err != nil {
+		return nil, errors.New("Can't open the file to upload")
+	}
+	defer file.Close()
+
 	// Create the request
-	req, err := http.NewRequest("POST", u.url, u.Options.FileToUpload)
+	req, err := http.NewRequest("POST", u.url, file)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Can't create upload URL request: %v", err.Error()))
 	}
