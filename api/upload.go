@@ -228,7 +228,6 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 
 
 	// Second field of the form: "at", which should be an API key or something
-	// TODO: Get the key dynamically
 	form.Add("at", u.Credentials.GetAPIToken())
 
 	// Create the request
