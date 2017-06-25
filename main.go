@@ -32,7 +32,7 @@ var (
 
 // Parse CLI arguments
 func initCliArguments() {
-	flag.StringVar(&cookiesFile, "cookies", "cookies.json", "File witht he cookies to authenticated the requests")
+	flag.StringVar(&cookiesFile, "cookies", "cookies.json", "File with the cookies to authenticated the requests")
 	flag.Var(&filesToUpload, "upload", "File or directory to upload")
 	flag.StringVar(&uploadedListFile, "uploadedList", "uploaded.txt", "List to already uploaded files")
 	flag.IntVar(&maxConcurrentUploads, "maxConcurrent", 1, "Number of max concurrent uploads")
@@ -135,11 +135,19 @@ func main() {
 		panic(fmt.Sprintf("Can't use '%v' as cookies file", cookiesFile))
 	}
 
+	// Get a new API token
+	token, err := api.NewTokenScraper(credentials).ScrapeNewToken()
+	if err != nil {
+		panic(err)
+	}
+	credentials.SetAPIToken(token)
+
 	// Create the uploader
 	uploader, err = utils.NewUploader(credentials, maxConcurrentUploads)
 	if err != nil {
 		panic(fmt.Sprintf("Can't create uploader: %v\n", err))
 	}
+
 	stopHandler := make(chan bool)
 	go handleUploaderEvents(stopHandler)
 

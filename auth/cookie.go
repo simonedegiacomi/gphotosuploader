@@ -12,6 +12,7 @@ import (
 
 type CookieCredentials struct {
 	client *http.Client
+	APIToken string
 }
 
 func NewCookieCredentialsFromJson(in io.Reader) (*CookieCredentials, error) {
@@ -45,4 +46,12 @@ func NewCookieCredentialsFromFile(fileName string) (*CookieCredentials, error) {
 
 func (c *CookieCredentials) GetClient() *http.Client {
 	return c.client
+}
+
+func (c *CookieCredentials) GetAPIToken() string {
+	return c.APIToken
+}
+
+func (c *CookieCredentials) SetAPIToken(token string) {
+	c.APIToken = token
 }

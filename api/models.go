@@ -105,3 +105,13 @@ type ItemToEnable []ItemToEnableArray
 type ItemToEnableArray []InnerItemToEnableArray
 
 type InnerItemToEnableArray interface{}
+
+
+
+///////////////////////////////
+//// Object with API token ////
+///////////////////////////////
+
+type ApiTokenContainer struct {
+	Token string `json:"SNlM0e"`
+}

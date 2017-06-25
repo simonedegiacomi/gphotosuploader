@@ -10,7 +10,6 @@ import (
 	"strings"
 	"gphotosuploader/auth"
 	"errors"
-	"time"
 )
 
 const (
@@ -44,19 +43,20 @@ type Upload struct {
 // get the authenticated http client.
 // In the UploadOptions at least the FileToUpload field must not be nil
 func NewUpload(options *UploadOptions, credentials auth.Credentials) (*Upload, error) {
+	// Read file information
+	fileInfo, err := os.Stat(options.FileToUpload)
+	if err != nil {
+		return nil, errors.New("Can't read stat of the file to upload")
+	}
+
 	if options.FileSize <= 0 {
-		// Read file information to get the file size
-		fileInfo, err := os.Stat(options.FileToUpload)
-		if err != nil {
-			return nil, errors.New("Can't read stat of the file to upload")
-		}
 		options.FileSize = fileInfo.Size()
 	}
 	if options.Name == "" {
-		options.Name = options.FileToUpload
+		options.Name = fileInfo.Name()
 	}
 	if options.Timestamp < 0 {
-		options.Timestamp = time.Now().Unix()
+		options.Timestamp = fileInfo.ModTime().Unix()
 	}
 
 	return &Upload{
@@ -169,11 +169,6 @@ func (u *Upload) uploadFile() (*UploadImageResponse, error) {
 	// Prepare request headers
 	req.Header.Add("content-type", "application/octet-stream")
 	req.Header.Add("content-length", fmt.Sprintf("%v", u.Options.FileSize))
-	req.Header.Add("accept-encoding", "gzip, deflate, br")
-	req.Header.Add("accept-language", "it-IT,it;q=0.8,en-US;q=0.6,en;q=0.4,nb;q=0.2")
-	req.Header.Add("x-guploader-no-308", "yes")
-	req.Header.Add("x-http-method-override", "PUT")
-	req.Header.Add("dnt", "1")
 
 
 	// Upload the image
@@ -193,7 +188,7 @@ func (u *Upload) uploadFile() (*UploadImageResponse, error) {
 // Request that enables the image once it gets uploaded
 func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 
-	// Form that contains the two requewt field
+	// Form that contains the two request field
 	form := url.Values{}
 
 	// First form field
@@ -203,7 +198,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 		[]FirstItemEnableImageRequest{
 			[]InnerItemFirstItemEnableImageRequest{
 				"af.add",
-				137530650,
+				137530650, // TODO: Find out what this number means. It must be equals to the string below but it's not random
 				SecondInnerArray{
 					MapOfItemsToEnable{
 						"137530650": ItemToEnable{
@@ -211,7 +206,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 								[]InnerItemToEnableArray{
 									uploadTokenBase64,
 									u.Options.Name,
-									1497707665000,
+									u.Options.Timestamp,
 								},
 							},
 						},
@@ -221,15 +216,6 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 		},
 
 	}
-	// First field of the form: "f.req"
-	//arrayG := []interface{}{uploadtokenBase64, u.Options.Name, 1497707665000}
-	//arrayF := []interface{}{arrayG}
-	//arrayE := []interface{}{arrayF}
-	//objectA := map[string]interface{}{"137530650": arrayE}
-	//arrayD := []interface{}{objectA}
-	//arrayC := []interface{}{"af.add", 137530650, arrayD}
-	//arrayB := []interface{}{arrayC}
-	//arrayA := []interface{}{"af.maf", arrayB}
 
 	// Stringify the first field
 	jsonStr, err := json.Marshal(jsonReq)
@@ -243,8 +229,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 
 	// Second field of the form: "at", which should be an API key or something
 	// TODO: Get the key dynamically
-	form.Add("at", "AKP94S1qFuWxy_Suk6fw2DyabTK2g3SaWA:1497883978124")
-
+	form.Add("at", u.Credentials.GetAPIToken())
 
 	// Create the request
 	req, err := http.NewRequest("POST", EnablePhotoUrl, strings.NewReader(form.Encode()))

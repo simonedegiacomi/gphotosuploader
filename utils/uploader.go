@@ -27,7 +27,7 @@ type ConcurrentUploader struct {
 // Creates a new ConcurrentUploader using the specified credentials. The second argument is the maximum number
 // of concurrent uploads (which must not be 0).
 func NewUploader (credentials auth.Credentials, maxConcurrentUploads int) (*ConcurrentUploader, error) {
-	if maxConcurrentUploads == 0 {
+	if maxConcurrentUploads <= 0 {
 		return nil, errors.New("maxConcurrentUploads must be greather than zero")
 	}
 
