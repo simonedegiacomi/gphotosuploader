@@ -130,6 +130,7 @@ func (u *Upload) requestUploadUrl() error {
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error during the request to get the upload URL: %v", err.Error()))
 	}
+	defer res.Body.Close()
 
 	// PArse the json response
 	jsonResponse := UploadURLRequestResponse{}
@@ -176,6 +177,7 @@ func (u *Upload) uploadFile() (*UploadImageResponse, error) {
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Can't upload the image, got: %v", err))
 	}
+	defer res.Body.Close()
 
 	// Parse the response
 	jsonRes := &UploadImageResponse{}
@@ -240,10 +242,11 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 	req.Header.Add("content-type", "application/x-www-form-urlencoded;charset=UTF-8")
 
 	// Send the request
-	_, err = u.Credentials.GetClient().Do(req)
+	res, err := u.Credentials.GetClient().Do(req)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error during the request to enable the image: %v", err.Error()))
 	}
+	defer res.Body.Close()
 
 	// Image enabled
 	return nil

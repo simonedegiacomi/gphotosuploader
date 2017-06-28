@@ -64,6 +64,15 @@ func (u *ConcurrentUploader) EnqueueUpload(options *api.UploadOptions) error {
 		return nil
 	}
 
+	// Check if the file is an image or a video
+	if valid, err := IsImageOrVideo(options.FileToUpload); err != nil {
+		u.Errors <- err
+		return nil
+	} else if !valid {
+		u.IgnoredUploads <- options
+		return nil
+	}
+
 	u.waitingGroup.Add(1)
 	go u.uploadFile(options)
 

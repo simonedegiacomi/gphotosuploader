@@ -13,6 +13,8 @@ import (
 	"bufio"
 	"io/ioutil"
 	"strconv"
+	"os/signal"
+	"syscall"
 )
 
 var (
@@ -54,6 +56,7 @@ func visitAndEnqueue(path string, file os.FileInfo, err error) error {
 			FileToUpload: path,
 		}
 		uploader.EnqueueUpload(&options)
+
 	}
 
 	return nil
@@ -81,9 +84,9 @@ func handleUploaderEvents(exiting chan bool) {
 				file.Close()
 			}
 
-		case info := <- uploader.IgnoredUploads:
+		case info := <-uploader.IgnoredUploads:
 			ignoredCount++
-			log.Printf("Not uploading '%v', it's already been uploaded!\n", info.FileToUpload)
+			log.Printf("Not uploading '%v', it's already been uploaded or it's not a image/video!\n", info.FileToUpload)
 
 		case err := <-uploader.Errors:
 			log.Printf("Upload error: %v\n", err)
@@ -96,7 +99,7 @@ func handleUploaderEvents(exiting chan bool) {
 	}
 }
 
-func handleFileSystemEvents(fsWatcher *fsnotify.Watcher) {
+func handleFileSystemEvents(fsWatcher *fsnotify.Watcher, exiting chan bool) {
 	select {
 	case event := <-fsWatcher.Events:
 		if event.Op == fsnotify.Create {
@@ -117,13 +120,16 @@ func handleFileSystemEvents(fsWatcher *fsnotify.Watcher) {
 
 	case err := <-fsWatcher.Errors:
 		log.Println(err)
+	case <-exiting:
+		exiting <- true
+		break
 	}
 }
 
-func notifyUploaderOfAlreadyUploadedFiles () {
+func notifyUploaderOfAlreadyUploadedFiles() {
 	file, err := os.OpenFile(uploadedListFile, os.O_CREATE, 0666)
 	if err != nil {
-		panic (err)
+		panic(err)
 	}
 	defer file.Close()
 
@@ -189,7 +195,7 @@ func main() {
 			panic(err)
 		}
 		defer watcher.Close()
-		go handleFileSystemEvents(watcher)
+		go handleFileSystemEvents(watcher, stopHandler)
 
 
 		// Add all the directories passed as argument to the watcher
@@ -199,13 +205,19 @@ func main() {
 			}
 		}
 
-		log.Println("Watching 👀")
+		log.Println("Watching 👀\nPress CTRL + C to stop")
 
-		// Wait indefinitely
-		<-(make(chan bool))
+		// Wait for CTRL + C
+		c := make(chan os.Signal, 2)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		<-c
 	}
 
 	stopHandler <- true
 	<-stopHandler
+	stopHandler <- true
+	<-stopHandler
+
 	log.Printf("Done (%v files uploaded, %v files ignored, %v errors)", uploadedFilesCount, ignoredCount, errorsCount)
+	os.Exit(0)
 }

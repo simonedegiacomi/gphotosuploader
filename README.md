@@ -52,6 +52,5 @@ Here are the major problems:
 - You need to manually get the enable number;
 - Currently the responses from Google are taken for good ()an error handling is needed);
 - The cookies will expire and there isn't any refresh system yet;
-- The standalone tool will try to upload any file it founds, even if they are not image;
 
 As you can see, contributions are welcome!
