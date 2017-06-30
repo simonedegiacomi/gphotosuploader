@@ -1,7 +1,7 @@
 package api
 
 import (
-	"gphotosuploader/auth"
+	"github.com/gphotosuploader/auth"
 	"net/http"
 	"golang.org/x/net/html"
 	"strings"
@@ -16,7 +16,7 @@ type TokenScraper struct {
 	credentials auth.Credentials
 }
 
-func NewTokenScraper(credentials auth.Credentials) *TokenScraper {
+func NewAtTokenScraper(credentials auth.Credentials) *TokenScraper {
 	return &TokenScraper{
 		credentials: credentials,
 	}

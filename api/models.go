@@ -13,17 +13,17 @@ type CreateSessionUploadURLRequest struct {
 }
 
 type ExternalFieldUploadURLRequest struct {
-	External  ExternalFieldObject `json:"external"`
+	External ExternalFieldObject `json:"external"`
 }
 
 type InlinedField struct {
-	Inlined  InlinedFieldObject `json:"inlined"`
+	Inlined InlinedFieldObject `json:"inlined"`
 }
 
 type ExternalFieldObject struct {
-	Name        string `json:"name"`
-	Filename    string `json:"filename"`
-	Size        string `json:"size"`
+	Name     string `json:"name"`
+	Filename string `json:"filename"`
+	Size     int64  `json:"size"`
 }
 
 type InlinedFieldObject struct {
@@ -49,7 +49,6 @@ type ExternalFieldTransferUploadURLResponse struct {
 	Name    string `json:"name"`
 	PutInfo PutInfoUploadURLResponse `json:"putInfo"`
 }
-
 
 type PutInfoUploadURLResponse struct {
 	Url string `json:"url"`
@@ -94,7 +93,7 @@ type EnableImageRequest []interface{}
 
 type FirstItemEnableImageRequest []InnerItemFirstItemEnableImageRequest
 
-type InnerItemFirstItemEnableImageRequest interface {}
+type InnerItemFirstItemEnableImageRequest interface{}
 
 type SecondInnerArray []MapOfItemsToEnable
 
@@ -114,4 +113,5 @@ type InnerItemToEnableArray interface{}
 
 type ApiTokenContainer struct {
 	Token string `json:"SNlM0e"`
+	UserId string `json:"S06Grb"`
 }

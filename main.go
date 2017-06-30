@@ -4,23 +4,20 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
-	"gphotosuploader/auth"
+	"github.com/gphotosuploader/auth"
 	"github.com/fsnotify/fsnotify"
 	"log"
 	"fmt"
-	"gphotosuploader/utils"
-	"gphotosuploader/api"
+	"github.com/gphotosuploader/utils"
+	"github.com/gphotosuploader/api"
 	"bufio"
-	"io/ioutil"
-	"strconv"
 	"os/signal"
 	"syscall"
+	"strings"
 )
-
 var (
 	// CLI arguments
-	cookiesFile string
-	numberFile string
+	authFile string
 	filesToUpload utils.FilesToUpload
 	directoriesToWatch utils.DirectoriesToWatch
 	uploadedListFile string
@@ -38,8 +35,7 @@ var (
 
 // Parse CLI arguments
 func initCliArguments() {
-	flag.StringVar(&cookiesFile, "cookies", "cookies.json", "File with the cookies to authenticated the requests")
-	flag.StringVar(&numberFile, "number", "number", "File that constains the number used to enable the image")
+	flag.StringVar(&authFile, "auth", "auth.json", "Authentication json file")
 	flag.Var(&filesToUpload, "upload", "File or directory to upload")
 	flag.StringVar(&uploadedListFile, "uploadedList", "uploaded.txt", "List to already uploaded files")
 	flag.IntVar(&maxConcurrentUploads, "maxConcurrent", 1, "Number of max concurrent uploads")
@@ -100,29 +96,31 @@ func handleUploaderEvents(exiting chan bool) {
 }
 
 func handleFileSystemEvents(fsWatcher *fsnotify.Watcher, exiting chan bool) {
-	select {
-	case event := <-fsWatcher.Events:
-		if event.Op == fsnotify.Create {
-			if info, err := os.Stat(event.Name); err != nil {
-				log.Println(err)
-			} else {
+	for {
+		select {
+		case event := <-fsWatcher.Events:
+			if event.Op != fsnotify.Remove {
+				if info, err := os.Stat(event.Name); err != nil {
+					log.Println(err)
+				} else {
 
-				// Upload the content of the new file
-				filepath.Walk(event.Name, visitAndEnqueue)
+					// Upload the content of the new file
+					filepath.Walk(event.Name, visitAndEnqueue)
 
-				// Start watching a new directory if needed
-				if info.IsDir() && watchRecursively {
-					fsWatcher.Add(event.Name)
+					// Start watching a new directory if needed
+					if info.IsDir() && watchRecursively {
+						fsWatcher.Add(event.Name)
+					}
 				}
+
 			}
 
+		case err := <-fsWatcher.Errors:
+			log.Println(err)
+		case <-exiting:
+			exiting <- true
+			break
 		}
-
-	case err := <-fsWatcher.Errors:
-		log.Println(err)
-	case <-exiting:
-		exiting <- true
-		break
 	}
 }
 
@@ -139,40 +137,73 @@ func notifyUploaderOfAlreadyUploadedFiles() {
 	}
 }
 
+func initAuthentication () auth.Credentials{
+	// Load authentication parameters
+	credentials, err := auth.NewCookieCredentialsFromFile(authFile)
+	if err != nil {
+		log.Printf("Can't use '%v' as auth file\n", authFile)
+		credentials = nil
+	} else {
+		log.Println("Auth file loaded, checking validity ...")
+		validity, err := credentials.TestCredentials()
+		if err != nil {
+			log.Fatalf("Can't check validity of credentials (%v)\n", err)
+			credentials = nil
+		} else if !validity.Valid {
+			log.Printf("Credentials are not valid! %v\n", validity.Reason)
+			credentials = nil
+		} else {
+			log.Println("Auth file seems to be valid")
+		}
+	}
+
+	if credentials == nil {
+		fmt.Println("The uploader can't continue without valid authentication tokens ...")
+		fmt.Println("Would you like to run the WebDriver CookieCredentials Wizard ? [Yes/No]")
+		fmt.Println("(If you don't know what it is, refer to the README)")
+
+		var answer string
+		fmt.Scanln(&answer)
+		startWizard := len(answer) > 0 && strings.ToLower(answer)[0] == 'y'
+
+		if !startWizard {
+			log.Fatalln("It's not possible to continue, sorry!")
+		} else {
+			credentials, err = utils.StartWebDriverCookieCredentialsWizard()
+			if err != nil {
+				log.Fatalf("Can't complete the login wizard, got: %v\n", err)
+			} else {
+				// TODO: Handle error
+				credentials.SerializeToFile(authFile)
+			}
+		}
+	}
+
+	// Get a new At token
+	log.Println("Getting a new At token ...")
+	token, err := api.NewAtTokenScraper(credentials).ScrapeNewToken()
+	if err != nil {
+		log.Fatalf("Can't scrape a new At token (%v)\n", err)
+	}
+	credentials.GetRuntimeParameters().AtToken = token
+	log.Println("At token taken")
+
+	return credentials
+}
+
 func main() {
 
 	// Parse console arguments
 	initCliArguments()
 
-	// Load credentials
-	credentials, err := auth.NewCookieCredentialsFromFile(cookiesFile)
-	if err != nil {
-		panic(fmt.Sprintf("Can't use '%v' as cookies file", cookiesFile))
-	}
-
-	// Get a new API token
-	token, err := api.NewTokenScraper(credentials).ScrapeNewToken()
-	if err != nil {
-		panic(err)
-	}
-	credentials.SetAPIToken(token)
-
-	// Read the enable number
-	content, err := ioutil.ReadFile(numberFile)
-	if err != nil {
-		panic(err)
-	}
-	number, err := strconv.Atoi(string(content))
-	if err != nil {
-		log.Panic("Can'r read number from number file")
-	}
-	credentials.SetEnableNumber(number)
-
+	// Initialize authentication
+	credentials := initAuthentication()
 
 	// Create the uploader
+	var err error
 	uploader, err = utils.NewUploader(credentials, maxConcurrentUploads)
 	if err != nil {
-		panic(fmt.Sprintf("Can't create uploader: %v\n", err))
+		log.Fatalf("Can't create uploader: %v\n", err)
 	}
 
 	stopHandler := make(chan bool)

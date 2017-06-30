@@ -8,13 +8,15 @@ import (
 	"bytes"
 	"net/url"
 	"strings"
-	"gphotosuploader/auth"
+	"github.com/gphotosuploader/auth"
 	"errors"
 )
 
 const (
 	NewUploadUrl = "https://photos.google.com/_/upload/uploadmedia/rupio/interactive?authuser=2"
 	EnablePhotoUrl = "https://photos.google.com/_/PhotosUi/mutate"
+
+	EnablePhotoKey = 137530650
 )
 
 // Structure that contains the Upload options
@@ -80,6 +82,7 @@ func (u *Upload) TryUpload() error {
 
 	// Upload the real image file
 	res, err := u.uploadFile()
+	//_, err = u.uploadFile()
 	if err != nil {
 		return errors.New("Can't upload file")
 	}
@@ -108,9 +111,62 @@ func (u *Upload) requestUploadUrl() error {
 					External: ExternalFieldObject{
 						Name: "file",
 						Filename: u.Options.Name,
-						Size: fmt.Sprintf("%v", u.Options.FileSize),
+						Size: u.Options.FileSize,
 					},
 				},
+
+
+				// Additional fields
+				InlinedField{
+					Inlined: InlinedFieldObject{
+						Name: "auto_create_album",
+						Content: "camera_sync.active",
+						ContentType: "text/plain",
+					},
+				},
+				InlinedField{
+					Inlined: InlinedFieldObject{
+						Name: "auto_downsize",
+						Content: "true",
+						ContentType: "text/plain",
+					},
+				},
+				InlinedField{
+					Inlined: InlinedFieldObject{
+						Name: "storage_policy",
+						Content: "use_manual_setting",
+						ContentType: "text/plain",
+					},
+				},
+				InlinedField{
+					Inlined: InlinedFieldObject{
+						Name: "disable_asbe_notification",
+						Content: "true",
+						ContentType: "text/plain",
+					},
+				},
+				InlinedField{
+					Inlined: InlinedFieldObject{
+						Name: "client",
+						Content: "photoweb",
+						ContentType: "text/plain",
+					},
+				},
+				InlinedField{
+					Inlined: InlinedFieldObject{
+						Name: "effective_id",
+						Content: u.Credentials.GetPersistentParameters().UserId,
+						ContentType: "text/plain",
+					},
+				},
+				InlinedField{
+					Inlined: InlinedFieldObject{
+						Name: "owner_name",
+						Content: u.Credentials.GetPersistentParameters().UserId,
+						ContentType: "text/plain",
+					},
+				},
+
 			},
 		},
 	}
@@ -170,6 +226,7 @@ func (u *Upload) uploadFile() (*UploadImageResponse, error) {
 	// Prepare request headers
 	req.Header.Add("content-type", "application/octet-stream")
 	req.Header.Add("content-length", fmt.Sprintf("%v", u.Options.FileSize))
+	req.Header.Add("X-HTTP-Method-Override", "PUT")
 
 
 	// Upload the image
@@ -201,7 +258,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 		[]FirstItemEnableImageRequest{
 			[]InnerItemFirstItemEnableImageRequest{
 				"af.add",
-				u.Credentials.GetEnableNumber(),
+				EnablePhotoKey,
 				SecondInnerArray{
 					mapOfItems,
 				},
@@ -209,7 +266,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 		},
 
 	}
-	mapOfItems[fmt.Sprintf("%v", u.Credentials.GetEnableNumber())] = ItemToEnable{
+	mapOfItems[fmt.Sprintf("%v", EnablePhotoKey)] = ItemToEnable{
 		ItemToEnableArray{
 			[]InnerItemToEnableArray{
 				uploadTokenBase64,
@@ -230,7 +287,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) error {
 
 
 	// Second field of the form: "at", which should be an API key or something
-	form.Add("at", u.Credentials.GetAPIToken())
+	form.Add("at", u.Credentials.GetRuntimeParameters().AtToken)
 
 	// Create the request
 	req, err := http.NewRequest("POST", EnablePhotoUrl, strings.NewReader(form.Encode()))

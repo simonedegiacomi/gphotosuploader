@@ -13,13 +13,43 @@ other kind of issues are at your own risk.
 
 ## How can i use it?
 ### Standalone tool
-To use G Photos Uploader as a standalone tool you need to create two files:
-- cookies.json: A JSON file that contains cookies to authenticate the HTTPS requests to upload the images. An example of
-the file can be found [here](examples/cookies-sample.json);
-- number: A simple text file with only one line with a special number. [Here](documentation/how-to-authenticate.md) you
-can read more about how to get it;
+To use G Photos Uploader as a standalone tool you need to get be authenticated. Authentication in handled with a
+JSON file that contains your cookies and your user Id.
 
-Once you have the two files you're ready to go, just launch the program. For example, to upload a file named image.png:
+#### Authentication
+Every time your run the tool the program will check for the auth file. If the file is not found or the cookies seems to
+be expired the tool will ask you if you want to run a wizard to get new cookies.
+The authentication wizard uses the WebDrivers protocol, which is usually used to perform automation tests, that allows
+G Photos Upload to control a browser and read the cookies from it. To use the WebDrivers Protocol you need to install a
+web driver:
+
+To install the Chromium Chrome Web Driver on Ubuntu use:
+```sh
+sudo apt-get install chromium-chromedriver
+
+# Create a link to launch the driver just typing 'chromedriver'
+sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
+```
+
+While on Mac Os X (using [Homebrew](https://brew.sh/)):
+```sh
+brew install chromedriver
+```
+
+And then launch it using:
+```sh
+chromedriver
+```
+
+When the Driver starts it will print the address at which it is listening.
+Once you enter the name of the browser and the address of the web driver on the wizard a new browser window will appear
+with the Google Photos Login page. Then you can login with your account just like you always do. When you're logged in
+the tool will read the cookies from the browser, save them into the auth file and close the browser window.
+(You can now stop the web driver server)
+
+
+#### Upload a photo or watch a directory
+Once you have the auth file you're ready to go, just launch the program. For example, to upload a file named image.png:
 ```sh
 go run main.go --upload ./image.png --cookies ./cookies.json --number ./number
 ```
@@ -39,18 +69,22 @@ The tool crates a file (which the default name is uploaded.txt) which is a list 
 re-uploaded. You can specify your own file using the uploadedList argument.
 To see all the available arguments, use --help.
 
-To watch for file system events, G Photos Uploader uses [fsnotify](https://github.com/fsnotify/fsnotify).
-
 ### Library
-As the Standalone client mode, you need to get your cookies and a special number.
-You can read a simple example [here](examples/simple.go).
+You can read a simple example [here](examples/simple.go) or get the documentation [here](http://godoc.org/github.com/simonedegiacomi/gphotosuploader).
+
+## Used libreries
+* [fsnotify](https://github.com/fsnotify/fsnotify): To watch for file system events;
+* [Selenium](https://github.com/tebeka/selenium): To authenticate using a browser;
+
+
+## Contributors:
+* [simonedegiacomi](https://github.com/simonedegiacomi)
+* [alessiofaieta](https://github.com/alessiofaieta)
 
 ## Current State and Problems
 This project is at a very beginning state.
 Here are the major problems:
-- You need to manually get the needed cookies and store them into a file;
-- You need to manually get the enable number;
-- Currently the responses from Google are taken for good ()an error handling is needed);
+- The responses from Google are taken for good (an error handling system is needed);
 - The cookies will expire and there isn't any refresh system yet;
 
-As you can see, contributions are welcome!
+Contributions are welcome!

@@ -1,27 +1,28 @@
 package main
 
 import (
-	"gphotosuploader/api"
-	"gphotosuploader/auth"
+	"github.com/"
 	"time"
+	"github.com/gphotosuploader/auth"
+	"github.com/gphotosuploader/api"
 )
 
 // Simple example which consist in the upload of a single image
 func main () {
 	// Load cookie for credentials from a json file
-	credentials, err := auth.NewCookieCredentialsFromFile("../cookies.json")
+	credentials, err := auth.NewCookieCredentialsFromFile("auth.json")
 	if err != nil {
 		panic(err)
 	}
 
 	// Get a new API token using the TokenScraper from the api package
-	token, err := api.NewTokenScraper(credentials).ScrapeNewToken()
+	token, err := api.NewAtTokenScraper(credentials).ScrapeNewToken()
 	if err != nil {
 		panic(err)
 	}
 
 	// Add the token to the credentials
-	credentials.SetAPIToken(token)
+	credentials.GetRuntimeParameters().AtToken = token
 
 
 	// Create an UploadOptions object that describes the upload.
