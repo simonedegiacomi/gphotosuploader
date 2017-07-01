@@ -1,9 +1,9 @@
 package main
 
 import (
-	"time"
 	"github.com/simonedegiacomi/gphotosuploader/auth"
 	"github.com/simonedegiacomi/gphotosuploader/api"
+	"os"
 )
 
 // Simple example which consist in the upload of a single image
@@ -15,7 +15,7 @@ func main () {
 	}
 
 	// Get a new API token using the TokenScraper from the api package
-	token, err := api.NewAtTokenScraper(credentials).ScrapeNewToken()
+	token, err := api.NewAtTokenScraper(credentials).ScrapeNewAtToken()
 	if err != nil {
 		panic(err)
 	}
@@ -24,18 +24,20 @@ func main () {
 	credentials.GetRuntimeParameters().AtToken = token
 
 
-	// Create an UploadOptions object that describes the upload.
-	options := api.UploadOptions{
-		FileToUpload: "path/to/file.png", // This field is required
-
-		// Below fields are optional
-		Name: "logo.png",
-		Timestamp: time.Now().Unix(),
+	// Open the file to upload
+	file, err := os.Open("path/to/image.png")
+	if err != nil {
+		panic(err)
 	}
 
+	// Create an UploadOptions object that describes the upload.
+	options, err := api.NewUploadOptionsFromFile(file)
+	if err != nil {
+		panic(err)
+	}
 
 	// Create an upload using the NewUpload method from the api package
-	upload, err := api.NewUpload(&options, credentials)
+	upload, err := api.NewUpload(options, credentials)
 	if err != nil {
 		panic(err)
 	}

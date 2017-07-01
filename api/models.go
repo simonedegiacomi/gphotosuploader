@@ -1,31 +1,35 @@
 package api
 
-////////////////////////////
-//// REQUEST URL MODELS ////
-////////////////////////////
+// Structure of the JSON object that it's sent to request a new url to upload a new photo
 type RequestUploadURL struct {
 	ProtocolVersion      string `json:"protocolVersion"`
-	CreateSessionRequest CreateSessionUploadURLRequest `json:"createSessionRequest"`
+	CreateSessionRequest CreateSessionRequest `json:"createSessionRequest"`
 }
 
-type CreateSessionUploadURLRequest struct {
+// Inner object of the request to get a new url to upload a photo.
+type CreateSessionRequest struct {
+	// The fields array is a slice that should contain only ExternalField or InternalField structs
 	Fields []interface{} `json:"fields"`
 }
 
-type ExternalFieldUploadURLRequest struct {
+// Possible field for the Fields slice in the CreateSessionRequest struct
+type ExternalField struct {
 	External ExternalFieldObject `json:"external"`
 }
 
+// Possible field for the Fields slice in the CreateSessionRequest struct
 type InlinedField struct {
 	Inlined InlinedFieldObject `json:"inlined"`
 }
 
+// Struct that describes the file that need to be uploaded. This objects should be contained in a ExternalField
 type ExternalFieldObject struct {
 	Name     string `json:"name"`
 	Filename string `json:"filename"`
 	Size     int64  `json:"size"`
 }
 
+// Struct used to define parameters of the upload. This object should be contained in a InternalField
 type InlinedFieldObject struct {
 	Name        string `json:"name"`
 	Content     string `json:"contentType"`
@@ -33,62 +37,63 @@ type InlinedFieldObject struct {
 }
 
 
-///////////////////////////////////////
-//// REQUEST URL MODELS - RESPONSE ////
-///////////////////////////////////////
 
+
+// Struct that represents the JSON response from the request to get an upload url
 type UploadURLRequestResponse struct {
-	SessionStatus SessionStatusUploadURLResponse `json:"sessionStatus"`
+	SessionStatus SessionStatus `json:"sessionStatus"`
 }
 
-type SessionStatusUploadURLResponse struct {
-	ExternalFieldTransfers []ExternalFieldTransferUploadURLResponse `json:"externalFieldTransfers"`
+// Struct that represents the inner JSON object of the UploadURLRequestResponse
+type SessionStatus struct {
+	// Field used in the response for the request to get a new upload URL
+	ExternalFieldTransfers []ExternalFieldTransfer `json:"externalFieldTransfers"`
+
+	// Field used in the UploadImageResponse
+	AdditionalInfo         AdditionalInfo `json:"additionalInfo"`
 }
 
-type ExternalFieldTransferUploadURLResponse struct {
+// Item of the ExternalFieldTransfers slice of SessionStatus
+type ExternalFieldTransfer struct {
 	Name    string `json:"name"`
-	PutInfo PutInfoUploadURLResponse `json:"putInfo"`
+	PutInfo PutInfo `json:"putInfo"`
 }
 
-type PutInfoUploadURLResponse struct {
+// Container of the url to use to upload a new photo. It's contained in the ExternalFieldTransfer
+type PutInfo struct {
 	Url string `json:"url"`
 }
 
 
 
-/////////////////////////////////
-//// UPLOAD IMAGE - RESPONSE ////
-/////////////////////////////////
 
-
+// JSON representation of the response from the upload image request.
 type UploadImageResponse struct {
-	SessionStatus SessionStatusUploadImageResponse `json:"sessionStatus"`
+	SessionStatus SessionStatus`json:"sessionStatus"`
 }
 
-type SessionStatusUploadImageResponse struct {
-	AdditionalInfo AdditionalInfoUploadImageResponse `json:"additionalInfo"`
+// Struct used in SessionStatus in the response of the upload of a new image
+type AdditionalInfo struct {
+	UploadService GoogleRupioAdditionalInfo `json:"uploader_service.GoogleRupioAdditionalInfo"`
 }
 
-type AdditionalInfoUploadImageResponse struct {
-	UploadService ServiceUploadImageResponse `json:"uploader_service.GoogleRupioAdditionalInfo"`
+// Used in AdditionalInfo for image upload response
+type GoogleRupioAdditionalInfo struct {
+	CompletionInfo CompletionInfo `json:"completionInfo"`
 }
 
-type ServiceUploadImageResponse struct {
-	CompletionInfo CompletionInfoUploadImageResponse `json:"completionInfo"`
+// Used in GoogleRupioAdditionalInfo for image upload response
+type CompletionInfo struct {
+	CustomerSpecificInfo CustomerSpecificInfo `json:"customerSpecificInfo"`
 }
 
-type CompletionInfoUploadImageResponse struct {
-	CustomerSpecificInfo CustomerSpecificInfoUploadImageResponse `json:"customerSpecificInfo"`
-}
-
-type CustomerSpecificInfoUploadImageResponse struct {
+// Used in CompletitionInfo and contains a token field used to enable the image in the future
+type CustomerSpecificInfo struct {
 	UploadTokenBase64 string `json:"upload_token_base64"`
 }
 
 
-//////////////////////////////
-//// ENABLE IMAGE REQUEST ////
-//////////////////////////////
+
 type EnableImageRequest []interface{}
 
 type FirstItemEnableImageRequest []InnerItemFirstItemEnableImageRequest
@@ -107,11 +112,8 @@ type InnerItemToEnableArray interface{}
 
 
 
-///////////////////////////////
-//// Object with API token ////
-///////////////////////////////
+
 
 type ApiTokenContainer struct {
 	Token string `json:"SNlM0e"`
-	UserId string `json:"S06Grb"`
 }

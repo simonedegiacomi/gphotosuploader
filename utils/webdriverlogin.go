@@ -8,7 +8,7 @@ import (
 	"fmt"
 )
 
-
+// Start a wizard that open a browser to let the user authenticate and return an auth.Credentials implementation
 func StartWebDriverCookieCredentialsWizard () (*auth.CookieCredentials, error) {
 	fmt.Print("\n-- WebDriver CookieCredentials Wizard --\n")
 
@@ -79,7 +79,7 @@ func StartWebDriverCookieCredentialsWizard () (*auth.CookieCredentials, error) {
 }
 
 
-
+// Utility to convert selenium cookies slice to go http.Cookie slice
 func SeleniumToGoCookies (seleniumCookies[] selenium.Cookie) []*http.Cookie {
 	goCookies := []*http.Cookie{}
 	for _, cookie := range seleniumCookies {
@@ -88,6 +88,8 @@ func SeleniumToGoCookies (seleniumCookies[] selenium.Cookie) []*http.Cookie {
 	return goCookies
 }
 
+
+// utility to convert a selenium cookie to a go http.Cookie
 func SeleniumToGoCookie (seleniumCookie selenium.Cookie) *http.Cookie {
 	return &http.Cookie{
 		Name: seleniumCookie.Name,

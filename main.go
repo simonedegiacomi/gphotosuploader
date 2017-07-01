@@ -48,10 +48,7 @@ func initCliArguments() {
 // Visitor function used by filepath.Walk that when visit a file upload it
 func visitAndEnqueue(path string, file os.FileInfo, err error) error {
 	if !file.IsDir() {
-		options := api.UploadOptions{
-			FileToUpload: path,
-		}
-		uploader.EnqueueUpload(&options)
+		uploader.EnqueueUpload(path)
 
 	}
 
@@ -70,19 +67,19 @@ func handleUploaderEvents(exiting chan bool) {
 		select {
 		case info := <-uploader.CompletedUploads:
 			uploadedFilesCount++
-			log.Printf("Upload of '%v' completed\n", info.Name)
+			log.Printf("Upload of '%v' completed\n", info)
 
 			// Update the upload completed file
 			if file, err := os.OpenFile(uploadedListFile, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666); err != nil {
 				log.Println("Can't update the uploaded file list")
 			} else {
-				file.WriteString(fmt.Sprintf("%v\n", info.FileToUpload))
+				file.WriteString(info + "\n")
 				file.Close()
 			}
 
 		case info := <-uploader.IgnoredUploads:
 			ignoredCount++
-			log.Printf("Not uploading '%v', it's already been uploaded or it's not a image/video!\n", info.FileToUpload)
+			log.Printf("Not uploading '%v', it's already been uploaded or it's not a image/video!\n", info)
 
 		case err := <-uploader.Errors:
 			log.Printf("Upload error: %v\n", err)
@@ -181,7 +178,7 @@ func initAuthentication () auth.Credentials{
 
 	// Get a new At token
 	log.Println("Getting a new At token ...")
-	token, err := api.NewAtTokenScraper(credentials).ScrapeNewToken()
+	token, err := api.NewAtTokenScraper(credentials).ScrapeNewAtToken()
 	if err != nil {
 		log.Fatalf("Can't scrape a new At token (%v)\n", err)
 	}

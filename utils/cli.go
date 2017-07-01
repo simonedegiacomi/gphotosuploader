@@ -1,3 +1,5 @@
+// The utils package contains methods used by the tool. All these methods are not needed if gphotosuploader is used as
+// a library
 package utils
 
 import (
@@ -6,7 +8,10 @@ import (
 	"fmt"
 )
 
+// Slice of name of file and directories to upload
 type FilesToUpload []string
+
+// Slice of names of directories to watch
 type DirectoriesToWatch []string
 
 func (a *FilesToUpload) String () string {

@@ -26,6 +26,7 @@ type AuthFile struct {
 	PersistentParameters *PersistentParameters `json:"persistantParameters"`
 }
 
+// Create a new CookieCredentials given a slice of cookies and the PersistentParameters
 func NewCookieCredentials (cookies []*http.Cookie, parameters *PersistentParameters) *CookieCredentials {
 	// Create a cookie jar for the client
 	jar, _ := cookiejar.New(nil)
@@ -114,9 +115,12 @@ func (c *CookieCredentials) SerializeToFile (fileName string) error {
 	return c.Serialize(file)
 }
 
-
+// Result of a credentials test
 type CredentialsTestResult struct {
+	// False if the cookies are not valid anymore
 	Valid bool
+
+	// Reason to explain a negative Valid field value
 	Reason string
 }
 
