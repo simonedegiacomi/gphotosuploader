@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"net/url"
 	"strings"
-	"github.com/gphotosuploader/auth"
+	"github.com/simonedegiacomi/gphotosuploader/auth"
 	"errors"
 )
 

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/gphotosuploader/auth"
+	"github.com/simonedegiacomi/gphotosuploader/auth"
 	"net/http"
 	"golang.org/x/net/html"
 	"strings"

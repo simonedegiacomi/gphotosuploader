@@ -4,7 +4,7 @@ import (
 	"github.com/tebeka/selenium"
 	"time"
 	"net/http"
-	"github.com/gphotosuploader/auth"
+	"github.com/simonedegiacomi/gphotosuploader/auth"
 	"fmt"
 )
 

@@ -1,10 +1,9 @@
 package main
 
 import (
-	"github.com/"
 	"time"
-	"github.com/gphotosuploader/auth"
-	"github.com/gphotosuploader/api"
+	"github.com/simonedegiacomi/gphotosuploader/auth"
+	"github.com/simonedegiacomi/gphotosuploader/api"
 )
 
 // Simple example which consist in the upload of a single image

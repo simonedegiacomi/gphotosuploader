@@ -2,8 +2,8 @@ package utils
 
 import (
 	"gopkg.in/headzoo/surf.v1/errors"
-	"github.com/gphotosuploader/auth"
-	"github.com/gphotosuploader/api"
+	"github.com/simonedegiacomi/gphotosuploader/auth"
+	"github.com/simonedegiacomi/gphotosuploader/api"
 	"sync"
 )
 
