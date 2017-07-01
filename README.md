@@ -51,12 +51,12 @@ the tool will read the cookies from the browser, save them into the auth file an
 #### Upload a photo or watch a directory
 Once you have the auth file you're ready to go, just launch the program. For example, to upload a file named image.png:
 ```sh
-go run main.go --upload ./image.png --cookies ./cookies.json --number ./number
+go run main.go --upload ./image.png
 ```
 
 Or to watch a directory:
 ```sh
-go run main.go --watch path/to/photos --cookies ./cookies.json --number ./number --maxConcurrent 4
+go run main.go --watch path/to/photos --maxConcurrent 4
 ```
 
 You can even upload all the photos of a directory and then start to watch another one:
