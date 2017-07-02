@@ -102,6 +102,7 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		u.Errors <- err
+		return
 	}
 	defer file.Close()
 
@@ -109,12 +110,14 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 	options, err := api.NewUploadOptionsFromFile(file)
 	if err != nil {
 		u.Errors <- err
+		return
 	}
 
 	// Create a new upload
 	upload, err := api.NewUpload(options, u.credentials)
 	if err != nil {
-		panic(err)
+		u.Errors <- err
+		return
 	}
 
 	// Try to upload the image

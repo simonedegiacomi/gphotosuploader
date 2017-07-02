@@ -1,68 +1,71 @@
-[
-  {
-    "Name": "OTZ",
-    "Value": "value",
-    "Domain": "photos.google.com",
-    "HttpOnly": false,
-    "Secure": true,
-    "Path": "/"
-  },
-  {
-    "Name": "CONSENT",
-    "Value": "value",
-    "Domain": ".google.com",
-    "HttpOnly": false,
-    "Secure": false,
-    "Path": "/"
-  },
-  {
-    "Name": "SID",
-    "Value": "value",
-    "Domain": ".google.com",
-    "HttpOnly": false,
-    "Secure": false,
-    "Path": "/"
-  },
-  {
-    "Name": "APISID",
-    "Value": "value",
-    "Domain": ".google.com",
-    "HttpOnly": false,
-    "Secure": false,
-    "Path": "/"
-  },
-  {
-    "Name": "SAPISID",
-    "Value": "value",
-    "Domain": ".google.com",
-    "HttpOnly": false,
-    "Secure": true,
-    "Path": "/"
-  },
-
-
-  {
-    "Name": "HSID",
-    "Value": "value",
-    "Domain": ".google.com",
-    "HttpOnly": true,
-    "Secure": false,
-    "Path": "/"
-  },
-  {
-    "Name": "NID",
-    "Value": "value",
-    "Domain": ".google.com",
-    "HttpOnly": true,
-    "Secure": false,
-    "Path": "/"
-  },
-  {
-    "Name": "SSID",
-    "Value": "value",
-    "Domain": ".google.com",
-    "HttpOnly": true,
-    "Secure": true,
-    "Path": "/"
+{
+  "cookies": [
+    {
+      "Name": "OTZ",
+      "Value": "value",
+      "Domain": "photos.google.com",
+      "HttpOnly": false,
+      "Secure": true,
+      "Path": "/"
+    },
+    {
+      "Name": "CONSENT",
+      "Value": "value",
+      "Domain": ".google.com",
+      "HttpOnly": false,
+      "Secure": false,
+      "Path": "/"
+    },
+    {
+      "Name": "SID",
+      "Value": "value",
+      "Domain": ".google.com",
+      "HttpOnly": false,
+      "Secure": false,
+      "Path": "/"
+    },
+    {
+      "Name": "APISID",
+      "Value": "value",
+      "Domain": ".google.com",
+      "HttpOnly": false,
+      "Secure": false,
+      "Path": "/"
+    },
+    {
+      "Name": "SAPISID",
+      "Value": "value",
+      "Domain": ".google.com",
+      "HttpOnly": false,
+      "Secure": true,
+      "Path": "/"
+    },
+    {
+      "Name": "HSID",
+      "Value": "value",
+      "Domain": ".google.com",
+      "HttpOnly": true,
+      "Secure": false,
+      "Path": "/"
+    },
+    {
+      "Name": "NID",
+      "Value": "value",
+      "Domain": ".google.com",
+      "HttpOnly": true,
+      "Secure": false,
+      "Path": "/"
+    },
+    {
+      "Name": "SSID",
+      "Value": "value",
+      "Domain": ".google.com",
+      "HttpOnly": true,
+      "Secure": true,
+      "Path": "/"
+    }
+  ],
+  "persistantParameters": {
+    "userId": "102470034537962034815"
   }
-]
+}

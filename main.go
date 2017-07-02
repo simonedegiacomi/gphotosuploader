@@ -14,7 +14,9 @@ import (
 	"os/signal"
 	"syscall"
 	"strings"
+	"time"
 )
+
 var (
 	// CLI arguments
 	authFile string
@@ -23,15 +25,18 @@ var (
 	uploadedListFile string
 	watchRecursively bool
 	maxConcurrentUploads int
+	eventDelay time.Duration
 
 	// Uploader
 	uploader *utils.ConcurrentUploader
+	timers = make(map[string]*time.Timer)
 
 	// Statistic
 	uploadedFilesCount = 0
 	ignoredCount = 0
 	errorsCount = 0
 )
+
 
 // Parse CLI arguments
 func initCliArguments() {
@@ -41,24 +46,24 @@ func initCliArguments() {
 	flag.IntVar(&maxConcurrentUploads, "maxConcurrent", 1, "Number of max concurrent uploads")
 	flag.Var(&directoriesToWatch, "watch", "Directory to watch")
 	flag.BoolVar(&watchRecursively, "watchRecursively", true, "Start watching new directories in currently watched directories")
+	delay := flag.Int("eventDelay", 3, "Distance of time to wait to consume different events of the same file (seconds)")
 
 	flag.Parse()
-}
 
-// Visitor function used by filepath.Walk that when visit a file upload it
-func visitAndEnqueue(path string, file os.FileInfo, err error) error {
-	if !file.IsDir() {
-		uploader.EnqueueUpload(path)
-
-	}
-
-	return nil
+	// Convert delay as int into duration
+	eventDelay = time.Duration(*delay) * time.Second
 }
 
 // Upload all the file and directories passed as arguments, calling filepath.Walk on each name
 func uploadArgumentsFiles() {
 	for _, name := range filesToUpload {
-		filepath.Walk(name, visitAndEnqueue)
+		filepath.Walk(name, func(path string, file os.FileInfo, err error) error {
+			if !file.IsDir() {
+				uploader.EnqueueUpload(path)
+			}
+
+			return nil
+		})
 	}
 }
 
@@ -92,31 +97,61 @@ func handleUploaderEvents(exiting chan bool) {
 	}
 }
 
+func startToWatch(filePath string, fsWatcher *fsnotify.Watcher) error {
+	if watchRecursively {
+		return filepath.Walk(filePath, func(path string, file os.FileInfo, err error) error {
+			if file.IsDir() {
+				return fsWatcher.Add(path)
+			}
+			return nil
+		})
+	} else {
+		return fsWatcher.Add(filePath)
+	}
+}
+
+func handleFileChange(event fsnotify.Event, fsWatcher *fsnotify.Watcher) {
+	// Use a map of timer to ignore different consecutive events for the same file.
+	// (when the os writes a file to the disk, sometimes it repetitively sends same events)
+	if timer, exists := timers[event.Name]; exists {
+
+		// Cancel the timer
+		cancelled := timer.Stop()
+
+		if cancelled && event.Op != fsnotify.Remove && event.Op != fsnotify.Rename {
+			// Postpone the file upload
+			timer.Reset(eventDelay)
+		}
+	} else if event.Op != fsnotify.Remove && event.Op != fsnotify.Rename {
+		timer = time.AfterFunc(eventDelay, func() {
+			log.Printf("Finally consuming events for the %v file", event.Name)
+
+			if info, err := os.Stat(event.Name); err != nil {
+				log.Println(err)
+			} else if !info.IsDir() {
+
+				// Upload file
+				uploader.EnqueueUpload(event.Name)
+			} else if watchRecursively {
+
+				startToWatch(event.Name, fsWatcher)
+			}
+		})
+		timers[event.Name] = timer
+	}
+}
+
 func handleFileSystemEvents(fsWatcher *fsnotify.Watcher, exiting chan bool) {
 	for {
 		select {
 		case event := <-fsWatcher.Events:
-			if event.Op != fsnotify.Remove {
-				if info, err := os.Stat(event.Name); err != nil {
-					log.Println(err)
-				} else {
-
-					// Upload the content of the new file
-					filepath.Walk(event.Name, visitAndEnqueue)
-
-					// Start watching a new directory if needed
-					if info.IsDir() && watchRecursively {
-						fsWatcher.Add(event.Name)
-					}
-				}
-
-			}
+			handleFileChange(event, fsWatcher)
 
 		case err := <-fsWatcher.Errors:
 			log.Println(err)
 		case <-exiting:
 			exiting <- true
-			break
+			return
 		}
 	}
 }
@@ -134,7 +169,7 @@ func notifyUploaderOfAlreadyUploadedFiles() {
 	}
 }
 
-func initAuthentication () auth.Credentials{
+func initAuthentication() auth.Credentials {
 	// Load authentication parameters
 	credentials, err := auth.NewCookieCredentialsFromFile(authFile)
 	if err != nil {
@@ -228,7 +263,7 @@ func main() {
 
 		// Add all the directories passed as argument to the watcher
 		for _, name := range directoriesToWatch {
-			if err := watcher.Add(name); err != nil {
+			if err := startToWatch(name, watcher); err != nil {
 				panic(err)
 			}
 		}
