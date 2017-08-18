@@ -13,6 +13,12 @@ Furthermore, the project can also be used as a library that you can include in o
 G Photos Uploader is an unofficial tool, I (and any possible contributor) don't guarantee any result. Any security or
 other kind of issues are at your own risk.
 
+## Install
+
+```sh
+go get github.com/simonedegiacomi/gphotosuploader
+```
+
 ## How can i use it?
 ### Standalone tool
 To use G Photos Uploader as a standalone tool you need to get be authenticated. Authentication in handled with a
@@ -25,7 +31,7 @@ The authentication wizard uses the WebDrivers protocol, which is usually used to
 G Photos Upload to control a browser and read the cookies from it. To use the WebDrivers Protocol you need to install a
 web driver:
 
-To install the Chromium Chrome Web Driver on Ubuntu use:
+- On Linux / Ubuntu:
 ```sh
 sudo apt-get install chromium-chromedriver
 
@@ -33,15 +39,21 @@ sudo apt-get install chromium-chromedriver
 sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
 ```
 
-While on Mac Os X (using [Homebrew](https://brew.sh/)):
+- On Mac Os X (using [Homebrew](https://brew.sh/)):
+
 ```sh
 brew install chromedriver
 ```
 
-And then launch it using:
+  And then launch it using:
 ```sh
 chromedriver
 ```
+
+- On Windows:
+  - Download latest Chrome Web Driver [from Google](https://sites.google.com/a/chromium.org/chromedriver/downloads)
+  - Copy chromedriver.exe in the path -  `C:\WINDOWS` for example
+  - Then launch it with a command prompt or `Win key + R` then `chromedriver.exe`
 
 When the Driver starts it will print the address at which it is listening.
 Once you enter the name of the browser and the address of the web driver on the wizard a new browser window will appear
