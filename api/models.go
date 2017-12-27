@@ -1,5 +1,9 @@
 package api
 
+import (
+	"fmt"
+)
+
 // Structure of the JSON object that it's sent to request a new url to upload a new photo
 type RequestUploadURL struct {
 	ProtocolVersion      string `json:"protocolVersion"`
@@ -111,7 +115,17 @@ type ItemToEnableArray []InnerItemToEnableArray
 type InnerItemToEnableArray interface{}
 
 
+type EnableImageResponse []interface{}
 
+func (r EnableImageResponse) getEnabledImageId () string {
+	innerArray := r[0].([]interface{})
+	innerObject := innerArray[1].(map[string]interface{})
+	secondInnerArray := innerObject[fmt.Sprintf("%v", EnablePhotoKey)].([]interface{})
+	thirdInnerArray := secondInnerArray[0].([]interface{})
+	fourthInnerArray := thirdInnerArray[0].([]interface{})
+	fifthInnerObject := fourthInnerArray[1].([]interface{})
+	return  fifthInnerObject[0].(string)
+}
 
 
 type ApiTokenContainer struct {

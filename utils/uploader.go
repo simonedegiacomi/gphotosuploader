@@ -12,6 +12,9 @@ import (
 type ConcurrentUploader struct {
 	credentials       auth.Credentials
 
+	// Optional field to specify the destination album
+	albumId				string
+
 	// Buffered channel to limit concurrent uploads
 	concurrentLimiter chan bool
 
@@ -35,15 +38,18 @@ type ConcurrentUploader struct {
 	Errors            chan error
 }
 
-// Creates a new ConcurrentUploader using the specified credentials. The second argument is the maximum number
-// of concurrent uploads (which must not be 0).
-func NewUploader (credentials auth.Credentials, maxConcurrentUploads int) (*ConcurrentUploader, error) {
+// Creates a new ConcurrentUploader using the specified credentials.
+// The second argument is the id of the album in which images are going to be added when uploaded. Use an empty string
+// if you don't want to move the images in to a specific album. The third argument is the maximum number of concurrent
+// uploads (which must not be 0).
+func NewUploader (credentials auth.Credentials, albumId string, maxConcurrentUploads int) (*ConcurrentUploader, error) {
 	if maxConcurrentUploads <= 0 {
 		return nil, errors.New("maxConcurrentUploads must be greather than zero")
 	}
 
 	return &ConcurrentUploader{
 		credentials: credentials,
+		albumId: albumId,
 
 		concurrentLimiter: make(chan bool, maxConcurrentUploads),
 
@@ -112,6 +118,7 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 		u.Errors <- err
 		return
 	}
+	options.AlbumId = u.albumId
 
 	// Create a new upload
 	upload, err := api.NewUpload(options, u.credentials)

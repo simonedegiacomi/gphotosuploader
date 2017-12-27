@@ -66,6 +66,12 @@ You can even upload all the photos of a directory and then start to watch anothe
 go run main.go --upload /path/to/old/photos --upload /downloads/cat.png --watch path/to/new/photos
 ```
 
+If you also want to add your photos to a specific existing album you can use the 'album' argument
+```sh
+go run main.go --album albumId --upload ./image.png
+```
+Where the album id is the string that you see in the url when you open th album on the Google Photos Web App
+(something like: https://photos.google.com/u/2/album/album_id)
 
 The tool crates a file (which the default name is uploaded.txt) which is a list of uploaded files, which will not be
 re-uploaded. You can specify your own file using the uploadedList argument.

@@ -22,6 +22,7 @@ var (
 	authFile string
 	filesToUpload utils.FilesToUpload
 	directoriesToWatch utils.DirectoriesToWatch
+	albumId string
 	uploadedListFile string
 	watchRecursively bool
 	maxConcurrentUploads int
@@ -38,10 +39,73 @@ var (
 )
 
 
+func main() {
+
+	// Parse console arguments
+	initCliArguments()
+
+	// Initialize authentication
+	credentials := initAuthentication()
+
+	// Create the uploader
+	var err error
+	uploader, err = utils.NewUploader(credentials, albumId, maxConcurrentUploads)
+	if err != nil {
+		log.Fatalf("Can't create uploader: %v\n", err)
+	}
+
+	stopHandler := make(chan bool)
+	go handleUploaderEvents(stopHandler)
+
+	// Load the list of already uploaded files
+	notifyUploaderOfAlreadyUploadedFiles()
+
+	// Upload files passed as arguments
+	uploadArgumentsFiles()
+
+	// Wait until all the uploads are completed
+	uploader.WaitUploadsCompleted()
+
+	// Start to watch all the directories if needed
+	if len(directoriesToWatch) > 0 {
+		// Create the watcher
+		watcher, err := fsnotify.NewWatcher()
+		if err != nil {
+			panic(err)
+		}
+		defer watcher.Close()
+		go handleFileSystemEvents(watcher, stopHandler)
+
+
+		// Add all the directories passed as argument to the watcher
+		for _, name := range directoriesToWatch {
+			if err := startToWatch(name, watcher); err != nil {
+				panic(err)
+			}
+		}
+
+		log.Println("Watching 👀\nPress CTRL + C to stop")
+
+		// Wait for CTRL + C
+		c := make(chan os.Signal, 2)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		<-c
+	}
+
+	stopHandler <- true
+	<-stopHandler
+	stopHandler <- true
+	<-stopHandler
+
+	log.Printf("Done (%v files uploaded, %v files ignored, %v errors)", uploadedFilesCount, ignoredCount, errorsCount)
+	os.Exit(0)
+}
+
 // Parse CLI arguments
 func initCliArguments() {
 	flag.StringVar(&authFile, "auth", "auth.json", "Authentication json file")
 	flag.Var(&filesToUpload, "upload", "File or directory to upload")
+	flag.StringVar(&albumId, "album", "", "Use this parameter to move new images to a specific album")
 	flag.StringVar(&uploadedListFile, "uploadedList", "uploaded.txt", "List to already uploaded files")
 	flag.IntVar(&maxConcurrentUploads, "maxConcurrent", 1, "Number of max concurrent uploads")
 	flag.Var(&directoriesToWatch, "watch", "Directory to watch")
@@ -221,66 +285,4 @@ func initAuthentication() auth.Credentials {
 	log.Println("At token taken")
 
 	return credentials
-}
-
-func main() {
-
-	// Parse console arguments
-	initCliArguments()
-
-	// Initialize authentication
-	credentials := initAuthentication()
-
-	// Create the uploader
-	var err error
-	uploader, err = utils.NewUploader(credentials, maxConcurrentUploads)
-	if err != nil {
-		log.Fatalf("Can't create uploader: %v\n", err)
-	}
-
-	stopHandler := make(chan bool)
-	go handleUploaderEvents(stopHandler)
-
-	// Load the list of already uploaded files
-	notifyUploaderOfAlreadyUploadedFiles()
-
-	// Upload files passed as arguments
-	uploadArgumentsFiles()
-
-	// Wait until all the uploads are completed
-	uploader.WaitUploadsCompleted()
-
-	// Start to watch all the directories if needed
-	if len(directoriesToWatch) > 0 {
-		// Create the watcher
-		watcher, err := fsnotify.NewWatcher()
-		if err != nil {
-			panic(err)
-		}
-		defer watcher.Close()
-		go handleFileSystemEvents(watcher, stopHandler)
-
-
-		// Add all the directories passed as argument to the watcher
-		for _, name := range directoriesToWatch {
-			if err := startToWatch(name, watcher); err != nil {
-				panic(err)
-			}
-		}
-
-		log.Println("Watching 👀\nPress CTRL + C to stop")
-
-		// Wait for CTRL + C
-		c := make(chan os.Signal, 2)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-		<-c
-	}
-
-	stopHandler <- true
-	<-stopHandler
-	stopHandler <- true
-	<-stopHandler
-
-	log.Printf("Done (%v files uploaded, %v files ignored, %v errors)", uploadedFilesCount, ignoredCount, errorsCount)
-	os.Exit(0)
 }
