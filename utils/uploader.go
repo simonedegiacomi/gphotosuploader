@@ -6,6 +6,8 @@ import (
 	"github.com/simonedegiacomi/gphotosuploader/api"
 	"sync"
 	"os"
+	"path/filepath"
+	"log"
 )
 
 // Simple client used to implement the tool that can upload multiple photos or videos at once
@@ -76,6 +78,17 @@ func (u *ConcurrentUploader) EnqueueUpload(filePath string) error {
 	if u.waiting {
 		return errors.New("Can't add new uploads when waiting")
 	}
+
+	// We need to use the absolute path of the file, to avoid multiple uploads of the same file if the tool is executed
+	// from different directories
+	if !filepath.IsAbs(filePath) {
+		if abs, err := filepath.Abs(filePath); err != nil {
+			log.Printf("Can't get the absolute path of file to upload, using relative path. Error: %v\n", err)
+		} else {
+			filePath = abs
+		}
+	}
+
 	if _, uploaded := u.uploadedFiles[filePath]; uploaded {
 		u.IgnoredUploads <- filePath
 		return nil
