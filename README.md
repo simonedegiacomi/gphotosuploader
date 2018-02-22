@@ -5,7 +5,7 @@
 Google Photos does not have a desktop uploader for Linux, neither an API to upload a photo programmatically ... So here
 they are!
 
-G Photos Uploader let's you upload photos from Linux (and, in theory, any OS for which you can compile a Go program)
+G Photos Uploader lets you upload photos from Linux (and, in theory, any OS for which you can compile a Go program)
 specifying the file name or watching a directory for changes.
 Furthermore, the project can also be used as a library that you can include in other Go programs.
 
@@ -97,6 +97,6 @@ You can read a simple example [here](examples/simple.go) or get the documentatio
 * [Selenium](https://github.com/tebeka/selenium): To authenticate using a browser;
 
 
-## Contributors:
+## Creators:
 * [simonedegiacomi](https://github.com/simonedegiacomi)
 * [alessiofaieta](https://github.com/alessiofaieta)
