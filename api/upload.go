@@ -62,7 +62,7 @@ func NewUploadOptionsFromFile(file *os.File) (*UploadOptions, error) {
 		FileSize: info.Size(),
 
 		Name:      file.Name(),
-		Timestamp: info.ModTime().Unix(),
+		Timestamp: info.ModTime().Unix() * 1000,
 	}, nil
 }
 
