@@ -141,7 +141,7 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 	}
 
 	// Try to upload the image
-	if err := upload.TryUpload(); err != nil {
+	if _, err := upload.TryUpload(); err != nil {
 		u.Errors <- err
 	} else {
 		u.uploadedFiles[filePath] = true
