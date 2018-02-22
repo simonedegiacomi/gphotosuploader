@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/simonedegiacomi/gphotosuploader/auth"
-	"github.com/simonedegiacomi/gphotosuploader/api"
 	"os"
+
+	"github.com/simonedegiacomi/gphotosuploader/api"
+	"github.com/simonedegiacomi/gphotosuploader/auth"
 )
 
 // Simple example which consist in the upload of a single image
-func main () {
+func main() {
 	// Load cookie for credentials from a json file
 	credentials, err := auth.NewCookieCredentialsFromFile("auth.json")
 	if err != nil {
@@ -22,7 +23,6 @@ func main () {
 
 	// Add the token to the credentials
 	credentials.GetRuntimeParameters().AtToken = token
-
 
 	// Open the file to upload
 	file, err := os.Open("path/to/image.png")
@@ -43,7 +43,7 @@ func main () {
 	}
 
 	// Finally upload the image
-	if err = upload.TryUpload(); err != nil {
+	if _, err = upload.TryUpload(); err != nil {
 		panic(err)
 	}
 

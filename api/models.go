@@ -2,11 +2,12 @@ package api
 
 import (
 	"fmt"
+	"strconv"
 )
 
 // Structure of the JSON object that it's sent to request a new url to upload a new photo
 type RequestUploadURL struct {
-	ProtocolVersion      string `json:"protocolVersion"`
+	ProtocolVersion      string               `json:"protocolVersion"`
 	CreateSessionRequest CreateSessionRequest `json:"createSessionRequest"`
 }
 
@@ -40,9 +41,6 @@ type InlinedFieldObject struct {
 	ContentType string `json:"contentType"`
 }
 
-
-
-
 // Struct that represents the JSON response from the request to get an upload url
 type UploadURLRequestResponse struct {
 	SessionStatus SessionStatus `json:"sessionStatus"`
@@ -51,52 +49,41 @@ type UploadURLRequestResponse struct {
 // Struct that represents the inner JSON object of the UploadURLRequestResponse
 type SessionStatus struct {
 	// Field used in the response for the request to get a new upload URL
-	ExternalFieldTransfers []ExternalFieldTransfer `json:"externalFieldTransfers"`
+	ExternalFieldTransfers []struct {
+		Name    string `json:"name"`
+		PutInfo struct {
+			Url string `json:"url"`
+		} `json:"putInfo"`
+	} `json:"externalFieldTransfers"`
 
 	// Field used in the UploadImageResponse
-	AdditionalInfo         AdditionalInfo `json:"additionalInfo"`
+	AdditionalInfo struct {
+		UploadService struct {
+			CompletionInfo struct {
+				CustomerSpecificInfo struct {
+					UploadTokenBase64 string `json:"upload_token_base64"`
+				} `json:"customerSpecificInfo"`
+			} `json:"completionInfo"`
+		} `json:"uploader_service.GoogleRupioAdditionalInfo"`
+	} `json:"additionalInfo"`
 }
-
-// Item of the ExternalFieldTransfers slice of SessionStatus
-type ExternalFieldTransfer struct {
-	Name    string `json:"name"`
-	PutInfo PutInfo `json:"putInfo"`
-}
-
-// Container of the url to use to upload a new photo. It's contained in the ExternalFieldTransfer
-type PutInfo struct {
-	Url string `json:"url"`
-}
-
-
-
 
 // JSON representation of the response from the upload image request.
 type UploadImageResponse struct {
-	SessionStatus SessionStatus`json:"sessionStatus"`
+	SessionStatus SessionStatus `json:"sessionStatus"`
 }
 
-// Struct used in SessionStatus in the response of the upload of a new image
-type AdditionalInfo struct {
-	UploadService GoogleRupioAdditionalInfo `json:"uploader_service.GoogleRupioAdditionalInfo"`
-}
+// // Struct used in SessionStatus in the response of the upload of a new image
+// type AdditionalInfo
 
-// Used in AdditionalInfo for image upload response
-type GoogleRupioAdditionalInfo struct {
-	CompletionInfo CompletionInfo `json:"completionInfo"`
-}
+// // Used in AdditionalInfo for image upload response
+// type GoogleRupioAdditionalInfo
 
-// Used in GoogleRupioAdditionalInfo for image upload response
-type CompletionInfo struct {
-	CustomerSpecificInfo CustomerSpecificInfo `json:"customerSpecificInfo"`
-}
+// // Used in GoogleRupioAdditionalInfo for image upload response
+// type CompletionInfo
 
-// Used in CompletitionInfo and contains a token field used to enable the image in the future
-type CustomerSpecificInfo struct {
-	UploadTokenBase64 string `json:"upload_token_base64"`
-}
-
-
+// // Used in CompletitionInfo and contains a token field used to enable the image in the future
+// type CustomerSpecificInfo
 
 type EnableImageRequest []interface{}
 
@@ -114,19 +101,42 @@ type ItemToEnableArray []InnerItemToEnableArray
 
 type InnerItemToEnableArray interface{}
 
-
 type EnableImageResponse []interface{}
 
-func (r EnableImageResponse) getEnabledImageId () string {
+func (r EnableImageResponse) getEnabledImageId() string {
 	innerArray := r[0].([]interface{})
 	innerObject := innerArray[1].(map[string]interface{})
 	secondInnerArray := innerObject[fmt.Sprintf("%v", EnablePhotoKey)].([]interface{})
 	thirdInnerArray := secondInnerArray[0].([]interface{})
 	fourthInnerArray := thirdInnerArray[0].([]interface{})
 	fifthInnerObject := fourthInnerArray[1].([]interface{})
-	return  fifthInnerObject[0].(string)
+	return fifthInnerObject[0].(string)
 }
 
+func (eir EnableImageResponse) getEnabledImageURL() (string, error) {
+	var inner3Array, inner6Array []interface{}
+	if len(eir) > 0 {
+		if inner1Array, ok := eir[0].([]interface{}); ok && len(inner1Array) >= 2 {
+			if inner2Map, ok := inner1Array[1].(map[string]interface{}); ok {
+				inner3Array = inner2Map[strconv.Itoa(EnablePhotoKey)].([]interface{})
+			}
+		}
+	}
+	if len(inner3Array) > 0 {
+		if inner4Array, ok := inner3Array[0].([]interface{}); ok && len(inner4Array) > 0 {
+			if inner5Array, ok := inner4Array[0].([]interface{}); ok && len(inner5Array) >= 2 {
+				inner6Array = inner5Array[1].([]interface{})
+			}
+		}
+	}
+	if len(inner6Array) >= 2 {
+		inner7Array := inner6Array[1].([]interface{})
+		if enabledImageURL, ok := inner7Array[0].(string); ok {
+			return enabledImageURL, nil
+		}
+	}
+	return "", fmt.Errorf("no enabledImageURL")
+}
 
 type ApiTokenContainer struct {
 	Token string `json:"SNlM0e"`
