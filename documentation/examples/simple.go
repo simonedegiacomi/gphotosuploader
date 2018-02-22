@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/simonedegiacomi/gphotosuploader/api"
@@ -43,9 +44,11 @@ func main() {
 	}
 
 	// Finally upload the image
-	if _, err = upload.TryUpload(); err != nil {
+	uploadRes, err := upload.Upload()
+	if err != nil {
 		panic(err)
 	}
+	fmt.Println("success! image uploaded: ", uploadRes.URLString())
 
 	// Image uploaded!
 }
