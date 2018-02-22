@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -30,6 +31,10 @@ const (
 
 	// Url to move an enabled photo into a specific album
 	MoveToAlbumUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute"
+)
+
+var (
+	RegexUploadedImageURL = regexp.MustCompile("^https:\\/\\/lh3\\.googleusercontent\\.com\\/([\\w-]+)$")
 )
 
 // UploadOptions contains the Upload options
@@ -106,8 +111,20 @@ func NewUpload(options *UploadOptions, credentials auth.Credentials) (*Upload, e
 	}, nil
 }
 
+func getImageIDFromURL(URL string) (string, error) {
+	matches := RegexUploadedImageURL.FindStringSubmatch(URL)
+	if len(matches) != 2 {
+		return "", fmt.Errorf("expected matches to be length 2 (1 submatch only), got %d", len(matches))
+	}
+	return matches[1], nil
+}
+
 type UploadResult struct {
-	URL string
+	ImageID string
+}
+
+func (ur *UploadResult) URLString() string {
+	return fmt.Sprintf("https://lh3.googleusercontent.com/%s", ur.ImageID)
 }
 
 // TryUpload tries to upload an image, making multiple http requests
@@ -129,7 +146,14 @@ func (u *Upload) TryUpload() (*UploadResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	enabledURL, _ := enableRes.getEnabledImageURL()
+	uploadedImageURL, err := enableRes.getEnabledImageURL()
+	if err != nil {
+		return nil, err
+	}
+	uploadedImageID, err := getImageIDFromURL(uploadedImageURL)
+	if err != nil {
+		return nil, err
+	}
 
 	// Add the image to an album if needed
 	if u.Options.AlbumId != "" {
@@ -137,7 +161,7 @@ func (u *Upload) TryUpload() (*UploadResult, error) {
 	}
 
 	// No errors, image uploaded!
-	return &UploadResult{URL: enabledURL}, nil
+	return &UploadResult{ImageID: uploadedImageID}, nil
 }
 
 // Method that send a request with the file name and size to generate an  upload url.
