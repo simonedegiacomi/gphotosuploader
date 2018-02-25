@@ -17,13 +17,13 @@ func main() {
 	}
 
 	// Get a new API token using the TokenScraper from the api package
-	token, err := api.NewAtTokenScraper(credentials).ScrapeNewAtToken()
+	token, err := api.NewAtTokenScraper(*credentials).ScrapeNewAtToken()
 	if err != nil {
 		panic(err)
 	}
 
 	// Add the token to the credentials
-	credentials.GetRuntimeParameters().AtToken = token
+	credentials.RuntimeParameters.AtToken = token
 
 	// Open the file to upload
 	file, err := os.Open("path/to/image.png")
@@ -38,7 +38,7 @@ func main() {
 	}
 
 	// Create an upload using the NewUpload method from the api package
-	upload, err := api.NewUpload(options, credentials)
+	upload, err := api.NewUpload(options, *credentials)
 	if err != nil {
 		panic(err)
 	}

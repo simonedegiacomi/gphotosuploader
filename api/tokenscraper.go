@@ -1,13 +1,14 @@
 package api
 
 import (
-	"github.com/simonedegiacomi/gphotosuploader/auth"
-	"net/http"
-	"golang.org/x/net/html"
-	"strings"
 	"encoding/json"
-	"fmt"
 	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/simonedegiacomi/gphotosuploader/auth"
+	"golang.org/x/net/html"
 )
 
 const (
@@ -16,12 +17,12 @@ const (
 
 // AtTokenScraper used to scape tokens to upload images
 type AtTokenScraper struct {
-	credentials auth.Credentials
+	credentials auth.CookieCredentials
 }
 
 // Create a new scraper for the at token. This token is user-dependent, so you need to create a new token scraper
 // for each Credentials object.
-func NewAtTokenScraper(credentials auth.Credentials) *AtTokenScraper {
+func NewAtTokenScraper(credentials auth.CookieCredentials) *AtTokenScraper {
 	return &AtTokenScraper{
 		credentials: credentials,
 	}
@@ -34,9 +35,8 @@ func (ts *AtTokenScraper) ScrapeNewAtToken() (string, error) {
 		return "", fmt.Errorf("Can't create the request to get the Google Photos homepage (%v)", err)
 	}
 
-
 	// Make the request
-	res, err := ts.credentials.GetClient().Do(req)
+	res, err := ts.credentials.Client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("Can't complete the request to get the Google Photos homepage (%v)", err)
 	}

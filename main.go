@@ -1,43 +1,43 @@
 package main
 
 import (
-	"flag"
-	"os"
-	"path/filepath"
-	"github.com/simonedegiacomi/gphotosuploader/auth"
-	"github.com/fsnotify/fsnotify"
-	"log"
-	"fmt"
-	"github.com/simonedegiacomi/gphotosuploader/utils"
-	"github.com/simonedegiacomi/gphotosuploader/api"
 	"bufio"
+	"flag"
+	"fmt"
+	"log"
+	"os"
 	"os/signal"
-	"syscall"
+	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/simonedegiacomi/gphotosuploader/api"
+	"github.com/simonedegiacomi/gphotosuploader/auth"
+	"github.com/simonedegiacomi/gphotosuploader/utils"
 )
 
 var (
 	// CLI arguments
-	authFile string
-	filesToUpload utils.FilesToUpload
-	directoriesToWatch utils.DirectoriesToWatch
-	albumId string
-	uploadedListFile string
-	watchRecursively bool
+	authFile             string
+	filesToUpload        utils.FilesToUpload
+	directoriesToWatch   utils.DirectoriesToWatch
+	albumId              string
+	uploadedListFile     string
+	watchRecursively     bool
 	maxConcurrentUploads int
-	eventDelay time.Duration
+	eventDelay           time.Duration
 
 	// Uploader
 	uploader *utils.ConcurrentUploader
-	timers = make(map[string]*time.Timer)
+	timers   = make(map[string]*time.Timer)
 
 	// Statistic
 	uploadedFilesCount = 0
-	ignoredCount = 0
-	errorsCount = 0
+	ignoredCount       = 0
+	errorsCount        = 0
 )
-
 
 func main() {
 
@@ -75,7 +75,6 @@ func main() {
 		}
 		defer watcher.Close()
 		go handleFileSystemEvents(watcher, stopHandler)
-
 
 		// Add all the directories passed as argument to the watcher
 		for _, name := range directoriesToWatch {
@@ -139,7 +138,7 @@ func handleUploaderEvents(exiting chan bool) {
 			log.Printf("Upload of '%v' completed\n", info)
 
 			// Update the upload completed file
-			if file, err := os.OpenFile(uploadedListFile, os.O_CREATE | os.O_APPEND | os.O_WRONLY, 0666); err != nil {
+			if file, err := os.OpenFile(uploadedListFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666); err != nil {
 				log.Println("Can't update the uploaded file list")
 			} else {
 				file.WriteString(info + "\n")
@@ -233,7 +232,7 @@ func notifyUploaderOfAlreadyUploadedFiles() {
 	}
 }
 
-func initAuthentication() auth.Credentials {
+func initAuthentication() auth.CookieCredentials {
 	// Load authentication parameters
 	credentials, err := auth.NewCookieCredentialsFromFile(authFile)
 	if err != nil {
@@ -277,12 +276,12 @@ func initAuthentication() auth.Credentials {
 
 	// Get a new At token
 	log.Println("Getting a new At token ...")
-	token, err := api.NewAtTokenScraper(credentials).ScrapeNewAtToken()
+	token, err := api.NewAtTokenScraper(*credentials).ScrapeNewAtToken()
 	if err != nil {
 		log.Fatalf("Can't scrape a new At token (%v)\n", err)
 	}
-	credentials.GetRuntimeParameters().AtToken = token
+	credentials.RuntimeParameters.AtToken = token
 	log.Println("At token taken")
 
-	return credentials
+	return *credentials
 }

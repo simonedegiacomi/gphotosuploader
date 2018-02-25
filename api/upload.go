@@ -58,7 +58,7 @@ type Upload struct {
 	Options *UploadOptions
 
 	// Credentials to used to send the requests
-	Credentials auth.Credentials
+	Credentials auth.CookieCredentials
 
 	// URL to which send the request with the image (the real upload)
 	url string
@@ -69,7 +69,7 @@ type Upload struct {
 
 // NewUpload creates a new Upload given an UploadOptions and a Credentials implementation. This method return an error if the
 // upload options struct it's not usable to create a new upload
-func NewUpload(options *UploadOptions, credentials auth.Credentials) (*Upload, error) {
+func NewUpload(options *UploadOptions, credentials auth.CookieCredentials) (*Upload, error) {
 	if options.Stream == nil {
 		return nil, errors.New("The stream of the UploadOptions is nil")
 	}

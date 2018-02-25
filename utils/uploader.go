@@ -1,70 +1,70 @@
 package utils
 
 import (
-	"gopkg.in/headzoo/surf.v1/errors"
-	"github.com/simonedegiacomi/gphotosuploader/auth"
-	"github.com/simonedegiacomi/gphotosuploader/api"
-	"sync"
+	"fmt"
+	"log"
 	"os"
 	"path/filepath"
-	"log"
+	"sync"
+
+	"github.com/simonedegiacomi/gphotosuploader/api"
+	"github.com/simonedegiacomi/gphotosuploader/auth"
 )
 
 // Simple client used to implement the tool that can upload multiple photos or videos at once
 type ConcurrentUploader struct {
-	credentials       auth.Credentials
+	credentials auth.CookieCredentials
 
 	// Optional field to specify the destination album
-	albumId				string
+	albumId string
 
 	// Buffered channel to limit concurrent uploads
 	concurrentLimiter chan bool
 
 	// Map of uploaded files (used as a set)
-	uploadedFiles     map[string]bool
+	uploadedFiles map[string]bool
 
 	// Waiting group used for the implementation of the Wait method
-	waitingGroup      sync.WaitGroup
+	waitingGroup sync.WaitGroup
 
 	// Flag to indicate if the client is waiting for all the upload to finish
-	waiting           bool
-
+	waiting bool
 
 	// Channel that is used to communicate CompletedUploads
-	CompletedUploads  chan string
+	CompletedUploads chan string
 
 	// Channel that is used to communicate IgnoredUploads (ex: a file is not an image/video)
-	IgnoredUploads    chan string
+	IgnoredUploads chan string
 
 	// Channel that is used to communicate errors
-	Errors            chan error
+	Errors chan error
 }
 
 // Creates a new ConcurrentUploader using the specified credentials.
 // The second argument is the id of the album in which images are going to be added when uploaded. Use an empty string
 // if you don't want to move the images in to a specific album. The third argument is the maximum number of concurrent
 // uploads (which must not be 0).
-func NewUploader (credentials auth.Credentials, albumId string, maxConcurrentUploads int) (*ConcurrentUploader, error) {
+func NewUploader(credentials auth.CookieCredentials, albumId string, maxConcurrentUploads int) (*ConcurrentUploader, error) {
 	if maxConcurrentUploads <= 0 {
-		return nil, errors.New("maxConcurrentUploads must be greather than zero")
+		return nil, fmt.Errorf("maxConcurrentUploads must be greater than zero")
 	}
 
 	return &ConcurrentUploader{
 		credentials: credentials,
-		albumId: albumId,
+		albumId:     albumId,
 
 		concurrentLimiter: make(chan bool, maxConcurrentUploads),
 
 		uploadedFiles: make(map[string]bool),
 
 		CompletedUploads: make(chan string),
-		IgnoredUploads: make(chan string),
-		Errors: make(chan error),
+		IgnoredUploads:   make(chan string),
+		Errors:           make(chan error),
 	}, nil
 }
 
 // Add files to the list of already uploaded files
-func (u *ConcurrentUploader) AddUploadedFiles (files ...string) {
+func (u *ConcurrentUploader) AddUploadedFiles(files ...string) {
 	for _, name := range files {
 		u.uploadedFiles[name] = true
 	}
@@ -76,7 +76,7 @@ func (u *ConcurrentUploader) AddUploadedFiles (files ...string) {
 // for that check the Errors and CompletedUploads channels
 func (u *ConcurrentUploader) EnqueueUpload(filePath string) error {
 	if u.waiting {
-		return errors.New("Can't add new uploads when waiting")
+		return fmt.Errorf("Can't add new uploads when waiting")
 	}
 
 	// We need to use the absolute path of the file, to avoid multiple uploads of the same file if the tool is executed
@@ -109,8 +109,8 @@ func (u *ConcurrentUploader) EnqueueUpload(filePath string) error {
 	return nil
 }
 
-func (u *ConcurrentUploader) decrementLimit () {
-	<- u.concurrentLimiter
+func (u *ConcurrentUploader) decrementLimit() {
+	<-u.concurrentLimiter
 }
 
 func (u *ConcurrentUploader) uploadFile(filePath string) {
@@ -152,7 +152,7 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 }
 
 // Blocks the goroutine until all the upload are completed. You can not add uploads when a goroutine call this method
-func (u *ConcurrentUploader) WaitUploadsCompleted () {
+func (u *ConcurrentUploader) WaitUploadsCompleted() {
 	u.waiting = true
 	u.waitingGroup.Wait()
 	u.waiting = false
