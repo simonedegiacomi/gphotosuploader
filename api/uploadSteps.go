@@ -28,6 +28,11 @@ const (
 // Method that send a request with the file name and size to generate an  upload url.
 // This method returns the url or an error
 func (u *Upload) requestUploadURL() error {
+	credentialsPersistentParameters := u.Credentials.PersistentParameters
+	if credentialsPersistentParameters == nil {
+		return fmt.Errorf("failed getting Credentials persistent parameters. Not set")
+	}
+
 	// Prepare json request
 	jsonReq := RequestUploadURL{
 		ProtocolVersion: "0.8",
@@ -80,14 +85,14 @@ func (u *Upload) requestUploadURL() error {
 				InlinedField{
 					Inlined: InlinedFieldObject{
 						Name:        "effective_id",
-						Content:     u.Credentials.GetPersistentParameters().UserId,
+						Content:     credentialsPersistentParameters.UserId,
 						ContentType: "text/plain",
 					},
 				},
 				InlinedField{
 					Inlined: InlinedFieldObject{
 						Name:        "owner_name",
-						Content:     u.Credentials.GetPersistentParameters().UserId,
+						Content:     credentialsPersistentParameters.UserId,
 						ContentType: "text/plain",
 					},
 				},
@@ -106,7 +111,7 @@ func (u *Upload) requestUploadURL() error {
 	req.Header.Add("x-guploader-client-info", "mechanism=scotty xhr resumable; clientVersion=156351954")
 
 	// Make the request
-	res, err := u.Credentials.GetClient().Do(req)
+	res, err := u.Credentials.Client.Do(req)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error during the request to get the upload URL: %v", err.Error()))
 	}
@@ -146,7 +151,7 @@ func (u *Upload) uploadFile() (*UploadImageResponse, error) {
 	req.Header.Add("X-HTTP-Method-Override", "PUT")
 
 	// Upload the image
-	res, err := u.Credentials.GetClient().Do(req)
+	res, err := u.Credentials.Client.Do(req)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Can't upload the image, got: %v", err))
 	}
@@ -201,7 +206,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) (*EnableImageR
 	form.Add("f.req", string(jsonStr))
 
 	// Second field of the form: "at", which should be an API key or something
-	form.Add("at", u.Credentials.GetRuntimeParameters().AtToken)
+	form.Add("at", u.Credentials.RuntimeParameters.AtToken)
 
 	// Create the request
 	req, err := http.NewRequest("POST", EnablePhotoUrl, strings.NewReader(form.Encode()))
@@ -213,7 +218,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) (*EnableImageR
 	req.Header.Add("content-type", "application/x-www-form-urlencoded;charset=UTF-8")
 
 	// Send the request
-	res, err := u.Credentials.GetClient().Do(req)
+	res, err := u.Credentials.Client.Do(req)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Error during the request to enable the image: %v", err.Error()))
 	}
@@ -258,7 +263,7 @@ func (u *Upload) moveToAlbum(albumId string) error {
 	}
 
 	form.Add("f.req", string(string(jsonString)))
-	form.Add("at", u.Credentials.GetRuntimeParameters().AtToken)
+	form.Add("at", u.Credentials.RuntimeParameters.AtToken)
 
 	req, err := http.NewRequest("POST", MoveToAlbumUrl, strings.NewReader(form.Encode()))
 	if err != nil {
@@ -266,7 +271,7 @@ func (u *Upload) moveToAlbum(albumId string) error {
 	}
 	req.Header.Add("content-type", "application/x-www-form-urlencoded;charset=UTF-8")
 
-	res, err := u.Credentials.GetClient().Do(req)
+	res, err := u.Credentials.Client.Do(req)
 	if err != nil {
 		return errors.New(fmt.Sprintf("Error sending the request to move the image: %v", err.Error()))
 	}

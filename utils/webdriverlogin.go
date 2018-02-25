@@ -1,15 +1,16 @@
 package utils
 
 import (
-	"github.com/tebeka/selenium"
-	"time"
-	"net/http"
-	"github.com/simonedegiacomi/gphotosuploader/auth"
 	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/simonedegiacomi/gphotosuploader/auth"
+	"github.com/tebeka/selenium"
 )
 
 // Start a wizard that open a browser to let the user authenticate and return an auth.Credentials implementation
-func StartWebDriverCookieCredentialsWizard () (*auth.CookieCredentials, error) {
+func StartWebDriverCookieCredentialsWizard() (*auth.CookieCredentials, error) {
 	fmt.Print("\n-- WebDriver CookieCredentials Wizard --\n")
 
 	// Get browser name and address
@@ -20,7 +21,6 @@ func StartWebDriverCookieCredentialsWizard () (*auth.CookieCredentials, error) {
 	fmt.Println("Insert the address of the WebDriver (example: http://localhost:9515): ")
 	var driverAddress string
 	fmt.Scanln(&driverAddress)
-
 
 	// Connect to the WebDriver
 	capabilities := selenium.Capabilities{
@@ -72,15 +72,21 @@ func StartWebDriverCookieCredentialsWizard () (*auth.CookieCredentials, error) {
 	}
 
 	info := res.(map[string]interface{})
-	credentials.GetPersistentParameters().UserId = info["id"].(string)
-
+	infoID, ok1 := info["id"]
+	if !ok1 {
+		return nil, fmt.Errorf("can't find key 'id' in info")
+	}
+	infoIDString, ok2 := infoID.(string)
+	if !ok2 {
+		return nil, fmt.Errorf("can't cast infoID to string")
+	}
+	credentials.PersistentParameters.UserId = infoIDString
 
 	return credentials, nil
 }
 
-
 // Utility to convert selenium cookies slice to go http.Cookie slice
-func SeleniumToGoCookies (seleniumCookies[] selenium.Cookie) []*http.Cookie {
+func SeleniumToGoCookies(seleniumCookies []selenium.Cookie) []*http.Cookie {
 	goCookies := []*http.Cookie{}
 	for _, cookie := range seleniumCookies {
 		goCookies = append(goCookies, SeleniumToGoCookie(cookie))
@@ -88,14 +94,13 @@ func SeleniumToGoCookies (seleniumCookies[] selenium.Cookie) []*http.Cookie {
 	return goCookies
 }
 
-
 // utility to convert a selenium cookie to a go http.Cookie
-func SeleniumToGoCookie (seleniumCookie selenium.Cookie) *http.Cookie {
+func SeleniumToGoCookie(seleniumCookie selenium.Cookie) *http.Cookie {
 	return &http.Cookie{
-		Name: seleniumCookie.Name,
+		Name:   seleniumCookie.Name,
 		Domain: seleniumCookie.Domain,
-		Path: seleniumCookie.Path,
+		Path:   seleniumCookie.Path,
 		Secure: seleniumCookie.Secure,
-		Value: seleniumCookie.Value,
+		Value:  seleniumCookie.Value,
 	}
 }
