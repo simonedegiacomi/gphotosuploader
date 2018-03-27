@@ -27,6 +27,8 @@ JSON file that contains your cookies and your user Id.
 #### Authentication
 Every time your run the tool the program will check for the auth file. If the file is not found or the cookies seems to
 be expired the tool will ask you if you want to run a wizard to get new cookies.
+
+##### Authentication wizard
 The authentication wizard uses the WebDrivers protocol, which is usually used to perform automation tests, that allows
 G Photos Upload to control a browser and read the cookies from it. To use the WebDrivers Protocol you need to install a
 web driver:
@@ -60,6 +62,9 @@ Once you enter the name of the browser and the address of the web driver on the 
 with the Google Photos Login page. Then you can login with your account just like you always do. When you're logged in
 the tool will read the cookies from the browser, save them into the auth file and close the browser window.
 (You can now stop the web driver server)
+
+##### Authentication using a Chrome extension
+You can also get the authentication file using a Chrome extension. You can read more about it [here](https://github.com/siongui/gphotosuploader/tree/master/crx-auth)
 
 
 #### Upload a photo or watch a directory
