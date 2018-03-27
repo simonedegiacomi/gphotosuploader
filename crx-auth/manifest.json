@@ -1,0 +1,17 @@
+{
+  "manifest_version": 2,
+
+  "name": "gpcookies",
+  "description": "Get authentication cookies of gphotosuploader",
+  "version": "0.1",
+
+  "browser_action": {
+    "default_title": "export gphotosuploader auth.json",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "cookies",
+    "tabs",
+    "<all_urls>"
+  ]
+}
