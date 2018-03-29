@@ -1,3 +1,10 @@
+var auth = {
+  "cookies": [],
+  "persistantParameters": {
+    "userId": ""
+  }
+};
+
 chrome.tabs.query({
   active: true,
   currentWindow: true
@@ -9,14 +16,7 @@ chrome.tabs.query({
     var cookieNames = ["OTZ", "CONSENT", "SID", "APISID", "SAPISID", "HSID", "NID", "SSID"];
     var cookieDomains = [".google.com", "photos.google.com"];
 
-    var auth = {
-      "cookies": [],
-      "persistantParameters": {
-        "userId": ""
-      }
-    };
-
-    document.write("<pre>");
+    auth["cookies"].length = 0;
     for (var i in cookies) {
 
       var cookie = cookies[i];
@@ -38,7 +38,14 @@ chrome.tabs.query({
       auth["cookies"].push(cookieAuth);
 
     }
-    document.write(JSON.stringify(auth, null, 2));
-    document.write("</pre>");
+    chrome.tabs.executeScript(null, {file: "getid.js"});
+
   });
+});
+
+chrome.runtime.onMessage.addListener(function(request, sender) {
+  auth["persistantParameters"]["userId"] = request.id;
+  document.write("<pre>");
+  document.write(JSON.stringify(auth, null, 2));
+  document.write("</pre>");
 });

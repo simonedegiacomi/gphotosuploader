@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
 
-  "name": "gpcookies",
-  "description": "Get authentication cookies of gphotosuploader",
+  "name": "gpauth",
+  "description": "Get content of auth.json for gphotosuploader",
   "version": "0.1",
 
   "browser_action": {
