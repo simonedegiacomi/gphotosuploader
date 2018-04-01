@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"regexp"
 	"time"
 
@@ -47,7 +48,7 @@ func NewUploadOptionsFromFile(file *os.File) (*UploadOptions, error) {
 		Stream:   file,
 		FileSize: info.Size(),
 
-		Name:      file.Name(),
+		Name:      path.Base(file.Name()),
 		Timestamp: info.ModTime().Unix() * 1000,
 	}, nil
 }
