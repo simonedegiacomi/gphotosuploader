@@ -95,7 +95,7 @@ re-uploaded. You can specify your own file using the uploadedList argument.
 To see all the available arguments, use --help.
 
 ### Library
-You can read a simple example [here](examples/simple.go) or get the documentation [here](http://godoc.org/github.com/simonedegiacomi/gphotosuploader).
+You can read a simple example [here](documentation/examples/simple.go) or get the documentation [here](http://godoc.org/github.com/simonedegiacomi/gphotosuploader).
 
 ## Used libreries
 * [fsnotify](https://github.com/fsnotify/fsnotify): To watch for file system events;
