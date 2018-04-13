@@ -19,19 +19,19 @@ other kind of issues are at your own risk.
 go get github.com/simonedegiacomi/gphotosuploader
 ```
 
-## How can i use it?
+## How can I use it?
 ### Standalone tool
-To use G Photos Uploader as a standalone tool you need to get be authenticated. Authentication in handled with a
-JSON file that contains your cookies and your user Id.
+To use G Photos Uploader as a standalone tool you need to be authenticated. Authentication is handled with a
+JSON file that contains your cookies and user ID.
 
 #### Authentication
-Every time your run the tool the program will check for the auth file. If the file is not found or the cookies seems to
-be expired the tool will ask you if you want to run a wizard to get new cookies.
+Every time you run the tool, it will check for the auth file. If the file is not found or the cookies seem to
+be expired, the tool will ask you if you want to run a wizard to get new cookies.
 
 ##### Authentication wizard
 The authentication wizard uses the WebDrivers protocol, which is usually used to perform automation tests, that allows
-G Photos Upload to control a browser and read the cookies from it. To use the WebDrivers Protocol you need to install a
-web driver:
+G Photos Uploader to control a browser and read the cookies from it. To use the WebDrivers Protocol you need to install a
+web driver (e.g. chromedriver):
 
 - On Linux / Ubuntu:
 ```sh
@@ -42,7 +42,6 @@ sudo ln -s /usr/lib/chromium-browser/chromedriver /usr/bin/chromedriver
 ```
 
 - On Mac Os X (using [Homebrew](https://brew.sh/)):
-
 ```sh
 brew install chromedriver
 ```
@@ -52,23 +51,28 @@ brew install chromedriver
 chromedriver
 ```
 
+Note - If you are running G Photos Uploader on a headless machine, you can run chromedriver on a separate machine as such:
+```sh
+chromedriver --whitelisted-ips="HEADLESS_MACHINE_IP"
+```
+
 - On Windows:
   - Download latest Chrome Web Driver [from Google](https://sites.google.com/a/chromium.org/chromedriver/downloads)
   - Copy chromedriver.exe in the path -  `C:\WINDOWS` for example
   - Then launch it with a command prompt or `Win key + R` then `chromedriver.exe`
 
 When the Driver starts it will print the address at which it is listening.
-Once you enter the name of the browser and the address of the web driver on the wizard a new browser window will appear
-with the Google Photos Login page. Then you can login with your account just like you always do. When you're logged in
-the tool will read the cookies from the browser, save them into the auth file and close the browser window.
+Once you enter the name of the browser (refer to browserName [here](https://github.com/SeleniumHQ/selenium/wiki/DesiredCapabilities)) and the address of the web driver, a new browser window will appear with the Google Photos Login page.
+Then you can login with your account just like you always do. When you're logged in
+the tool will read the cookies from the browser, save them into the auth file and close the browser window.  
 (You can now stop the web driver server)
 
 ##### Authentication using a Chrome extension
-You can also get the authentication file using a Chrome extension. You can read more about it [here](https://github.com/siongui/gphotosuploader/tree/master/crx-auth)
+You can also get the authentication file using a Chrome extension. You can read more about it [here](https://github.com/simonedegiacomi/gphotosuploader/tree/master/crx-auth)
 
 
 #### Upload a photo or watch a directory
-Once you have the auth file you're ready to go, just launch the program. For example, to upload a file named image.png:
+Once you have the auth file, you're ready to go. For example, to upload a file named image.png:
 ```sh
 go run main.go --upload ./image.png
 ```
@@ -83,14 +87,14 @@ You can even upload all the photos of a directory and then start to watch anothe
 go run main.go --upload /path/to/old/photos --upload /downloads/cat.png --watch path/to/new/photos
 ```
 
-If you also want to add your photos to a specific existing album you can use the 'album' argument
+If you also want to add your photos to a specific existing album you can use the 'album' argument:
 ```sh
 go run main.go --album albumId --upload ./image.png
 ```
-Where the album id is the string that you see in the url when you open th album on the Google Photos Web App
+Where the albumId is the string that you see in the url when you open the album in the Google Photos Web App
 (something like: https://photos.google.com/u/2/album/album_id)
 
-The tool crates a file (which the default name is uploaded.txt) which is a list of uploaded files, which will not be
+The tool creates a file (default name: uploaded.txt) which is a list of uploaded files, which will not be
 re-uploaded. You can specify your own file using the uploadedList argument.
 To see all the available arguments, use --help.
 
