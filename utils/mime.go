@@ -4,6 +4,7 @@ import (
 	"os"
 	"net/http"
 	"strings"
+	"path"
 )
 
 // Check if the file has a image or video mime. This function read the first 512 bytes of the file.
@@ -22,15 +23,21 @@ func IsFileImageOrVideo (file *os.File) (bool, error) {
 	// Detect content type
 	mime := http.DetectContentType(buffer)
 
-	return (strings.Contains(mime, "image/") || strings.Contains(mime, "video/")), nil
+	return strings.Contains(mime, "image/") || strings.Contains(mime, "video/"), nil
 }
 
 // Check if the file at the given path is an image or a video
-func IsImageOrVideo (path string) (bool, error) {
-	if file, err := os.Open(path); err != nil {
-		return false, err
-	} else {
+func IsImageOrVideo (fileName string) (bool, error) {
+	extension := path.Ext(fileName)
+	if isExtensionSupported(extension) {
+		return true, nil
+	}
+
+	// If extension check fails, try with mime
+	if file, err := os.Open(fileName); err == nil {
 		defer file.Close()
 		return IsFileImageOrVideo(file)
+	} else {
+		return false, err
 	}
 }
