@@ -33,7 +33,7 @@ var (
 	uploader *utils.ConcurrentUploader
 	timers   = make(map[string]*time.Timer)
 
-	// Statistic
+	// Statistics
 	uploadedFilesCount = 0
 	ignoredCount       = 0
 	errorsCount        = 0
@@ -41,13 +41,11 @@ var (
 
 func main() {
 
-	// Parse console arguments
-	initCliArguments()
+	parseCliArguments()
 
-	// Initialize authentication
 	credentials := initAuthentication()
 
-	// Create the uploader
+
 	var err error
 	uploader, err = utils.NewUploader(credentials, albumId, maxConcurrentUploads)
 	if err != nil {
@@ -57,8 +55,7 @@ func main() {
 	stopHandler := make(chan bool)
 	go handleUploaderEvents(stopHandler)
 
-	// Load the list of already uploaded files
-	notifyUploaderOfAlreadyUploadedFiles()
+	loadAlreadyUploadedFiles()
 
 	// Upload files passed as arguments
 	uploadArgumentsFiles()
@@ -68,7 +65,6 @@ func main() {
 
 	// Start to watch all the directories if needed
 	if len(directoriesToWatch) > 0 {
-		// Create the watcher
 		watcher, err := fsnotify.NewWatcher()
 		if err != nil {
 			panic(err)
@@ -101,7 +97,7 @@ func main() {
 }
 
 // Parse CLI arguments
-func initCliArguments() {
+func parseCliArguments() {
 	flag.StringVar(&authFile, "auth", "auth.json", "Authentication json file")
 	flag.Var(&filesToUpload, "upload", "File or directory to upload")
 	flag.StringVar(&albumId, "album", "", "Use this parameter to move new images to a specific album")
@@ -116,6 +112,62 @@ func initCliArguments() {
 	// Convert delay as int into duration
 	eventDelay = time.Duration(*delay) * time.Second
 }
+
+func initAuthentication() auth.CookieCredentials {
+	// Load authentication parameters
+	credentials, err := auth.NewCookieCredentialsFromFile(authFile)
+	if err != nil {
+		log.Printf("Can't use '%v' as auth file\n", authFile)
+		credentials = nil
+	} else {
+		log.Println("Auth file loaded, checking validity ...")
+		validity, err := credentials.CheckCredentials()
+		if err != nil {
+			log.Fatalf("Can't check validity of credentials (%v)\n", err)
+			credentials = nil
+		} else if !validity.Valid {
+			log.Printf("Credentials are not valid! %v\n", validity.Reason)
+			credentials = nil
+		} else {
+			log.Println("Auth file seems to be valid")
+		}
+	}
+
+	if credentials == nil {
+		fmt.Println("The uploader can't continue without valid authentication tokens ...")
+		fmt.Println("Would you like to run the WebDriver CookieCredentials Wizard ? [Yes/No]")
+		fmt.Println("(If you don't know what it is, refer to the README)")
+
+		var answer string
+		fmt.Scanln(&answer)
+		startWizard := len(answer) > 0 && strings.ToLower(answer)[0] == 'y'
+
+		if !startWizard {
+			log.Fatalln("It's not possible to continue, sorry!")
+		} else {
+			credentials, err = utils.StartWebDriverCookieCredentialsWizard()
+			if err != nil {
+				log.Fatalf("Can't complete the login wizard, got: %v\n", err)
+			} else {
+				// TODO: Handle error
+				credentials.SerializeToFile(authFile)
+			}
+		}
+	}
+
+	// Get a new At token
+	log.Println("Getting a new At token ...")
+	token, err := api.NewAtTokenScraper(*credentials).ScrapeNewAtToken()
+	if err != nil {
+		log.Fatalf("Can't scrape a new At token (%v)\n", err)
+	}
+	credentials.RuntimeParameters.AtToken = token
+	log.Println("At token taken")
+
+	return *credentials
+}
+
+
 
 // Upload all the file and directories passed as arguments, calling filepath.Walk on each name
 func uploadArgumentsFiles() {
@@ -212,6 +264,7 @@ func handleFileSystemEvents(fsWatcher *fsnotify.Watcher, exiting chan bool) {
 
 		case err := <-fsWatcher.Errors:
 			log.Println(err)
+
 		case <-exiting:
 			exiting <- true
 			return
@@ -219,7 +272,7 @@ func handleFileSystemEvents(fsWatcher *fsnotify.Watcher, exiting chan bool) {
 	}
 }
 
-func notifyUploaderOfAlreadyUploadedFiles() {
+func loadAlreadyUploadedFiles() {
 	file, err := os.OpenFile(uploadedListFile, os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
@@ -232,56 +285,3 @@ func notifyUploaderOfAlreadyUploadedFiles() {
 	}
 }
 
-func initAuthentication() auth.CookieCredentials {
-	// Load authentication parameters
-	credentials, err := auth.NewCookieCredentialsFromFile(authFile)
-	if err != nil {
-		log.Printf("Can't use '%v' as auth file\n", authFile)
-		credentials = nil
-	} else {
-		log.Println("Auth file loaded, checking validity ...")
-		validity, err := credentials.TestCredentials()
-		if err != nil {
-			log.Fatalf("Can't check validity of credentials (%v)\n", err)
-			credentials = nil
-		} else if !validity.Valid {
-			log.Printf("Credentials are not valid! %v\n", validity.Reason)
-			credentials = nil
-		} else {
-			log.Println("Auth file seems to be valid")
-		}
-	}
-
-	if credentials == nil {
-		fmt.Println("The uploader can't continue without valid authentication tokens ...")
-		fmt.Println("Would you like to run the WebDriver CookieCredentials Wizard ? [Yes/No]")
-		fmt.Println("(If you don't know what it is, refer to the README)")
-
-		var answer string
-		fmt.Scanln(&answer)
-		startWizard := len(answer) > 0 && strings.ToLower(answer)[0] == 'y'
-
-		if !startWizard {
-			log.Fatalln("It's not possible to continue, sorry!")
-		} else {
-			credentials, err = utils.StartWebDriverCookieCredentialsWizard()
-			if err != nil {
-				log.Fatalf("Can't complete the login wizard, got: %v\n", err)
-			} else {
-				// TODO: Handle error
-				credentials.SerializeToFile(authFile)
-			}
-		}
-	}
-
-	// Get a new At token
-	log.Println("Getting a new At token ...")
-	token, err := api.NewAtTokenScraper(*credentials).ScrapeNewAtToken()
-	if err != nil {
-		log.Fatalf("Can't scrape a new At token (%v)\n", err)
-	}
-	credentials.RuntimeParameters.AtToken = token
-	log.Println("At token taken")
-
-	return *credentials
-}

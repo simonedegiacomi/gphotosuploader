@@ -30,37 +30,52 @@ func NewAtTokenScraper(credentials auth.CookieCredentials) *AtTokenScraper {
 
 // Use this method to get a new at token. The method makes an http request to Google and uses the user credentials
 func (ts *AtTokenScraper) ScrapeNewAtToken() (string, error) {
+	page, err := ts.getHomePage()
+	if err != nil {
+		return "", err
+	}
+
+	script, err := findScript(page)
+	if err != nil {
+		return "", err
+	}
+
+	return findTokenInScript(script)
+}
+
+func (ts *AtTokenScraper) getHomePage() (*http.Response, error) {
 	req, err := http.NewRequest("GET", GooglePhotoUrl, nil)
 	if err != nil {
-		return "", fmt.Errorf("Can't create the request to get the Google Photos homepage (%v)", err)
+		return nil, fmt.Errorf("can't create the request to get the Google Photos homepage (%v)", err)
 	}
 
 	// Make the request
-	res, err := ts.credentials.Client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("Can't complete the request to get the Google Photos homepage (%v)", err)
+	if res, err := ts.credentials.Client.Do(req); err != nil {
+		return nil, fmt.Errorf("can't complete the request to get the Google Photos homepage (%v)", err)
+	} else {
+		return res, nil
 	}
+}
 
-	// Parse the request response as a HTML page
-	t := html.NewTokenizer(res.Body)
-	var script string
-	found := false
-	for !found {
+func findScript(page *http.Response) (string, error) {
+	t := html.NewTokenizer(page.Body)
+	for {
 		tt := t.Next()
 
 		switch {
 		case tt == html.ErrorToken: // End of html document
-			return "", errors.New("Can't find the script tag with the token in the response")
+			return "", errors.New("can't find the script tag with the token in the response")
 
 		case tt == html.StartTagToken && t.Token().Data == "script": // We need the first script tag
 			t.Next()
 
 			// Get the script string
-			script = t.Token().Data
-			found = true
+			return t.Token().Data, nil
 		}
 	}
+}
 
+func findTokenInScript(script string) (string, error) {
 	// The script assigns an object to the global window object. We are going to parse the script as a JSON
 	// so we need to get rid of the assignment code
 	equalsIndex := strings.Index(script, "=")
@@ -70,7 +85,7 @@ func (ts *AtTokenScraper) ScrapeNewAtToken() (string, error) {
 
 	// Parse the json
 	object := ApiTokenContainer{}
-	if err = json.NewDecoder(strings.NewReader(script)).Decode(&object); err != nil {
+	if err := json.NewDecoder(strings.NewReader(script)).Decode(&object); err != nil {
 		return "", fmt.Errorf("can't parse the JSON object that contains the at token (%v)", err)
 	}
 

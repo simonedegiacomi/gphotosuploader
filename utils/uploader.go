@@ -30,14 +30,9 @@ type ConcurrentUploader struct {
 	// Flag to indicate if the client is waiting for all the upload to finish
 	waiting bool
 
-	// Channel that is used to communicate CompletedUploads
 	CompletedUploads chan string
-
-	// Channel that is used to communicate IgnoredUploads (ex: a file is not an image/video)
-	IgnoredUploads chan string
-
-	// Channel that is used to communicate errors
-	Errors chan error
+	IgnoredUploads   chan string
+	Errors           chan error
 }
 
 // Creates a new ConcurrentUploader using the specified credentials.
@@ -72,24 +67,24 @@ func (u *ConcurrentUploader) AddUploadedFiles(files ...string) {
 
 // Enqueue a new upload. You must not call this method while waiting for some uploads to finish (The method return an
 // error if you try to do it).
-// Due to the fact that this method is asynchronous, if nil is return, it doesn't mean the the upload was completed,
-// for that check the Errors and CompletedUploads channels
+// Due to the fact that this method is asynchronous, if nil is return it doesn't mean the the upload was completed:
+// for that use the Errors and CompletedUploads channels
 func (u *ConcurrentUploader) EnqueueUpload(filePath string) error {
 	if u.waiting {
-		return fmt.Errorf("Can't add new uploads when waiting")
+		return fmt.Errorf("can't add new uploads while waiting queued upload to finish")
 	}
 
 	// We need to use the absolute path of the file, to avoid multiple uploads of the same file if the tool is executed
 	// from different directories
 	if !filepath.IsAbs(filePath) {
 		if abs, err := filepath.Abs(filePath); err != nil {
-			log.Printf("Can't get the absolute path of file to upload, using relative path. Error: %v\n", err)
+			log.Printf("uploader: Can't get the absolute path of file to upload, using relative path. Error: %v\n", err)
 		} else {
 			filePath = abs
 		}
 	}
 
-	if _, uploaded := u.uploadedFiles[filePath]; uploaded {
+	if u.wasFileAlreadyUploaded(filePath) {
 		u.IgnoredUploads <- filePath
 		return nil
 	}
@@ -103,19 +98,18 @@ func (u *ConcurrentUploader) EnqueueUpload(filePath string) error {
 		return nil
 	}
 
-	u.waitingGroup.Add(1)
 	go u.uploadFile(filePath)
 
 	return nil
 }
 
-func (u *ConcurrentUploader) decrementLimit() {
-	<-u.concurrentLimiter
+func (u *ConcurrentUploader) wasFileAlreadyUploaded(filePath string) bool {
+	_, uploaded := u.uploadedFiles[filePath]
+	return uploaded
 }
 
 func (u *ConcurrentUploader) uploadFile(filePath string) {
-	u.concurrentLimiter <- true
-	defer u.decrementLimit()
+	u.joinGroupAndWaitForTurn()
 
 	// Open the file
 	file, err := os.Open(filePath)
@@ -148,10 +142,26 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 		u.CompletedUploads <- filePath
 	}
 
-	u.waitingGroup.Done()
+
+	u.leaveGroupAndNotifyNextUpload()
 }
 
-// Blocks the goroutine until all the upload are completed. You can not add uploads when a goroutine call this method
+func (u *ConcurrentUploader) joinGroupAndWaitForTurn() {
+	u.waitingGroup.Add(1)
+
+	// Insert something in the channel. We remove values from it only when we complete an upload, blocking the
+	// gorutines if we exceed the maxConcurrentUpload
+	u.concurrentLimiter <- true
+}
+
+func (u *ConcurrentUploader) leaveGroupAndNotifyNextUpload() {
+	u.waitingGroup.Done()
+
+	// Remove a value to empty the channel or to unlock a waiting gorutine
+	<-u.concurrentLimiter
+}
+
+// Blocks this goroutine until all the upload are completed. You can not add uploads when a goroutine call this method
 func (u *ConcurrentUploader) WaitUploadsCompleted() {
 	u.waiting = true
 	u.waitingGroup.Wait()

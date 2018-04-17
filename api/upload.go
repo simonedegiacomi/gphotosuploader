@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/simonedegiacomi/gphotosuploader/auth"
+	"log"
 )
 
 var (
@@ -41,7 +42,7 @@ type UploadOptions struct {
 func NewUploadOptionsFromFile(file *os.File) (*UploadOptions, error) {
 	info, err := file.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("Can't read file information (%v)", err)
+		return nil, fmt.Errorf("can't read file information (%v)", err)
 	}
 
 	return &UploadOptions{
@@ -65,17 +66,17 @@ type Upload struct {
 	url string
 
 	// Id of the image got from the response of the request that enables the image
-	enabledImageId string
+	idToMoveIntoAlbum string
 }
 
 // NewUpload creates a new Upload given an UploadOptions and a Credentials implementation. This method return an error if the
 // upload options struct it's not usable to create a new upload
 func NewUpload(options *UploadOptions, credentials auth.CookieCredentials) (*Upload, error) {
 	if options.Stream == nil {
-		return nil, errors.New("The stream of the UploadOptions is nil")
+		return nil, errors.New("the stream of the UploadOptions is nil")
 	}
 	if options.FileSize <= 0 {
-		return nil, errors.New("The fileSize of the UploadOptions is <= 0")
+		return nil, errors.New("the fileSize of the UploadOptions is <= 0")
 	}
 
 	// Fill missing optional fields
@@ -101,39 +102,44 @@ func getImageIDFromURL(URL string) (string, error) {
 }
 
 type UploadResult struct {
-	ImageID string
+	Uploaded bool
+	ImageID  string
+	ImageUrl string
 }
 
 func (ur *UploadResult) URLString() string {
 	return fmt.Sprintf("https://lh3.googleusercontent.com/%s", ur.ImageID)
 }
 
-// Upload tries to upload an image, making multiple http requests
+// Upload tries to upload an image, making multiple http requests. It returns a response event if there is an error
 func (u *Upload) Upload() (*UploadResult, error) {
 	// First request to get the upload url
 	err := u.requestUploadURL()
 	if err != nil {
-		return nil, errors.New("Can't request an upload url")
+		return &UploadResult{Uploaded: false}, errors.New("can't request an upload url")
 	}
 
 	// Upload the real image file
-	uploadRes, err := u.uploadFile()
+	token, err := u.uploadFile()
 	if err != nil {
-		return nil, errors.New("Can't upload file")
+		return &UploadResult{Uploaded: false}, errors.New("can't upload file")
 	}
 
 	// Enable the photo
-	enableRes, err := u.enablePhoto(uploadRes)
+	uploadedImageURL, err := u.enablePhoto(token)
 	if err != nil {
-		return nil, err
-	}
-	uploadedImageURL, err := enableRes.getEnabledImageURL()
-	if err != nil {
-		return nil, err
+		log.Println("[WARNING] Image uploaded but url not found")
+		return &UploadResult{
+			Uploaded: true,
+		}, err
 	}
 	uploadedImageID, err := getImageIDFromURL(uploadedImageURL)
 	if err != nil {
-		return nil, err
+		log.Println("[WARNING] Image uploaded but url not found")
+		return &UploadResult{
+			Uploaded: true,
+			ImageUrl: uploadedImageURL,
+		}, err
 	}
 
 	// Add the image to an album if needed
@@ -142,5 +148,9 @@ func (u *Upload) Upload() (*UploadResult, error) {
 	}
 
 	// No errors, image uploaded!
-	return &UploadResult{ImageID: uploadedImageID}, nil
+	return &UploadResult{
+		Uploaded: true,
+		ImageID:  uploadedImageID,
+		ImageUrl: uploadedImageURL,
+	}, nil
 }

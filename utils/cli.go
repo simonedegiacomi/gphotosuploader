@@ -45,3 +45,4 @@ func (a *DirectoriesToWatch) Set (name string) error {
 	*a = append(*a, name)
 	return nil
 }
+

@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"github.com/buger/jsonparser"
+	"strconv"
 )
 
 const (
@@ -25,8 +27,7 @@ const (
 	MoveToAlbumUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute"
 )
 
-// Method that send a request with the file name and size to generate an  upload url.
-// This method returns the url or an error
+// Method that send a request with the file name and size to generate an upload url.
 func (u *Upload) requestUploadURL() error {
 	credentialsPersistentParameters := u.Credentials.PersistentParameters
 	if credentialsPersistentParameters == nil {
@@ -117,32 +118,32 @@ func (u *Upload) requestUploadURL() error {
 	}
 	defer res.Body.Close()
 
-	// PArse the json response
-	jsonResponse := UploadURLRequestResponse{}
-	if err := json.NewDecoder(res.Body).Decode(&jsonResponse); err != nil {
-		return errors.New(fmt.Sprintf("Can't parse json response for upload URL request: %v", err.Error()))
+	// Parse the json response
+	jsonResponse, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return responseReadingError()
 	}
 
-	if len(jsonResponse.SessionStatus.ExternalFieldTransfers) <= 0 {
-		return errors.New("An array of the request URL response is empty")
-	}
 
-	// Set the URL to which upload the file
-	u.url = jsonResponse.SessionStatus.ExternalFieldTransfers[0].PutInfo.Url
-	return nil
+	u.url, err = jsonparser.GetString(jsonResponse, "sessionStatus", "externalFieldTransfers", "[0]", "putInfo", "url")
+	return err
+}
+
+func responseReadingError () error {
+	return fmt.Errorf("can't read response")
 }
 
 // This method upload the file to the URL received from requestUploadUrl.
 // When the upload is completed, the method updates the base64UploadToken field
-func (u *Upload) uploadFile() (*UploadImageResponse, error) {
+func (u *Upload) uploadFile() (token string, err error) {
 	if u.url == "" {
-		return nil, errors.New("The url field is empty, make sure to call requestUploadUrl first")
+		return "", errors.New("the url field is empty, make sure to call requestUploadUrl first")
 	}
 
 	// Create the request
 	req, err := http.NewRequest("POST", u.url, u.Options.Stream)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Can't create upload URL request: %v", err.Error()))
+		return "", fmt.Errorf("can't create upload URL request: %v", err.Error())
 	}
 
 	// Prepare request headers
@@ -153,26 +154,26 @@ func (u *Upload) uploadFile() (*UploadImageResponse, error) {
 	// Upload the image
 	res, err := u.Credentials.Client.Do(req)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Can't upload the image, got: %v", err))
+		return "", fmt.Errorf("can't upload the image, got: %v", err)
 	}
 	defer res.Body.Close()
 
 	// Parse the response
-	jsonRes := &UploadImageResponse{}
-	if err := json.NewDecoder(res.Body).Decode(&jsonRes); err != nil {
-		return nil, err
+	jsonRes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", nil
 	}
-	return jsonRes, nil
+
+	return jsonparser.GetString(jsonRes, "sessionStatus", "additionalInfo", "uploader_service.GoogleRupioAdditionalInfo", "completionInfo", "customerSpecificInfo", "upload_token_base64")
 }
 
 // Request that enables the image once it gets uploaded
-func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) (*EnableImageResponse, error) {
+func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err error) {
 
 	// Form that contains the two request field
 	form := url.Values{}
 
 	// First form field
-	uploadTokenBase64 := uploadResponse.SessionStatus.AdditionalInfo.UploadService.CompletionInfo.CustomerSpecificInfo.UploadTokenBase64
 	mapOfItems := MapOfItemsToEnable{}
 	jsonReq := EnableImageRequest{
 		"af.maf",
@@ -186,7 +187,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) (*EnableImageR
 			},
 		},
 	}
-	mapOfItems[fmt.Sprintf("%v", EnablePhotoKey)] = ItemToEnable{
+	mapOfItems[strconv.Itoa(EnablePhotoKey)] = ItemToEnable{
 		ItemToEnableArray{
 			[]InnerItemToEnableArray{
 				uploadTokenBase64,
@@ -199,7 +200,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) (*EnableImageR
 	// Stringify the first field
 	jsonStr, err := json.Marshal(jsonReq)
 	if err != nil {
-		return nil, err
+		return  "", err
 	}
 
 	// And add it to the form
@@ -211,7 +212,7 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) (*EnableImageR
 	// Create the request
 	req, err := http.NewRequest("POST", EnablePhotoUrl, strings.NewReader(form.Encode()))
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Can't create the request to enable the image: %v", err.Error()))
+		return  "", fmt.Errorf("can't create the request to enable the image: %v", err.Error())
 	}
 
 	// Add headers
@@ -220,33 +221,41 @@ func (u *Upload) enablePhoto(uploadResponse *UploadImageResponse) (*EnableImageR
 	// Send the request
 	res, err := u.Credentials.Client.Do(req)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Error during the request to enable the image: %v", err.Error()))
+		return  "", fmt.Errorf("error during the request to enable the image: %v", err.Error())
 	}
 	defer res.Body.Close()
 
 	// Read the response as a string
-	bytesResponse, err := ioutil.ReadAll(res.Body)
+	jsonRes, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return  "", err
 	}
 
-	// Parse the response
-	jsonRes := &EnableImageResponse{}
-	if err := json.Unmarshal(bytesResponse[6:], &jsonRes); err != nil {
-		return nil, err
-	}
-	u.enabledImageId = jsonRes.getEnabledImageId()
+	// Skip first characters which are not valid json
+	jsonRes = jsonRes[6:]
 
-	// Image enabled
-	return jsonRes, nil
+	u.idToMoveIntoAlbum, err = jsonparser.GetString(jsonRes, "[0]", "[1]", strconv.Itoa(EnablePhotoKey), "[0]", "[0]", "[1]", "[0]")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	if eUrl, err := jsonparser.GetString(jsonRes, "[0]", "[1]", strconv.Itoa(EnablePhotoKey), "[0]", "[0]", "[1]", "[1]", "[0]"); err != nil {
+		return "", err
+	} else {
+		return eUrl, nil
+	}
 }
 
 // This method add the image to an existing album given the id
 func (u *Upload) moveToAlbum(albumId string) error {
+	if u.idToMoveIntoAlbum == "" {
+		return errors.New(fmt.Sprint("can't move image to album without the enabled image id"))
+	}
+
 	form := url.Values{}
 
 	var innerJson [2]interface{}
-	innerJson[0] = [1]string{u.enabledImageId}
+	innerJson[0] = [1]string{u.idToMoveIntoAlbum}
 	innerJson[1] = albumId
 	innerJsonString, err := json.Marshal(innerJson)
 	if err != nil {
@@ -267,13 +276,13 @@ func (u *Upload) moveToAlbum(albumId string) error {
 
 	req, err := http.NewRequest("POST", MoveToAlbumUrl, strings.NewReader(form.Encode()))
 	if err != nil {
-		return errors.New(fmt.Sprintf("Can't create the request to add the image into the album: %v", err.Error()))
+		return fmt.Errorf("can't create the request to add the image into the album: %v", err.Error())
 	}
 	req.Header.Add("content-type", "application/x-www-form-urlencoded;charset=UTF-8")
 
 	res, err := u.Credentials.Client.Do(req)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error sending the request to move the image: %v", err.Error()))
+		return fmt.Errorf("error sending the request to move the image: %v", err.Error())
 	}
 	defer res.Body.Close()
 
