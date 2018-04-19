@@ -101,6 +101,13 @@ To see all the available arguments, use --help.
 ### Library
 You can read a simple example [here](documentation/examples/simple.go) or get the documentation [here](http://godoc.org/github.com/simonedegiacomi/gphotosuploader).
 
+## Development
+if you want to continue the development of this tool/library, execute first the following script:
+```
+githooks/create-links
+```
+This will links the hooks used to handle the version of the tool.
+
 ## Used libreries
 * [fsnotify](https://github.com/fsnotify/fsnotify): To watch for file system events;
 * [Selenium](https://github.com/tebeka/selenium): To authenticate using a browser;
