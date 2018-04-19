@@ -28,6 +28,7 @@ var (
 	watchRecursively     bool
 	maxConcurrentUploads int
 	eventDelay           time.Duration
+	printVersion         bool
 
 	// Uploader
 	uploader *utils.ConcurrentUploader
@@ -40,11 +41,13 @@ var (
 )
 
 func main() {
-
 	parseCliArguments()
+	if printVersion {
+		fmt.Printf("Version:\t%s\nCommit date:\t%s\n", version, versionDate)
+		os.Exit(0)
+	}
 
 	credentials := initAuthentication()
-
 
 	var err error
 	uploader, err = utils.NewUploader(credentials, albumId, maxConcurrentUploads)
@@ -106,6 +109,7 @@ func parseCliArguments() {
 	flag.Var(&directoriesToWatch, "watch", "Directory to watch")
 	flag.BoolVar(&watchRecursively, "watchRecursively", true, "Start watching new directories in currently watched directories")
 	delay := flag.Int("eventDelay", 3, "Distance of time to wait to consume different events of the same file (seconds)")
+	flag.BoolVar(&printVersion, "version", false, "Print version and commit date")
 
 	flag.Parse()
 
@@ -166,8 +170,6 @@ func initAuthentication() auth.CookieCredentials {
 
 	return *credentials
 }
-
-
 
 // Upload all the file and directories passed as arguments, calling filepath.Walk on each name
 func uploadArgumentsFiles() {
@@ -284,4 +286,3 @@ func loadAlreadyUploadedFiles() {
 		uploader.AddUploadedFiles(scanner.Text())
 	}
 }
-
