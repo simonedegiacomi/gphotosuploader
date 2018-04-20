@@ -91,7 +91,7 @@ func (u *ConcurrentUploader) EnqueueUpload(filePath string) error {
 
 	// Check if the file is an image or a video
 	if valid, err := IsImageOrVideo(filePath); err != nil {
-		u.Errors <- err
+		u.sendError(filePath, err)
 		return nil
 	} else if !valid {
 		u.IgnoredUploads <- filePath
@@ -114,7 +114,7 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 	// Open the file
 	file, err := os.Open(filePath)
 	if err != nil {
-		u.Errors <- err
+		u.sendError(filePath, err)
 		return
 	}
 	defer file.Close()
@@ -122,7 +122,7 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 	// Create options
 	options, err := api.NewUploadOptionsFromFile(file)
 	if err != nil {
-		u.Errors <- err
+		u.sendError(filePath, err)
 		return
 	}
 	options.AlbumId = u.albumId
@@ -130,13 +130,13 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 	// Create a new upload
 	upload, err := api.NewUpload(options, u.credentials)
 	if err != nil {
-		u.Errors <- err
+		u.sendError(filePath, err)
 		return
 	}
 
 	// Try to upload the image
 	if _, err := upload.Upload(); err != nil {
-		u.Errors <- err
+		u.sendError(filePath, err)
 	} else {
 		u.uploadedFiles[filePath] = true
 		u.CompletedUploads <- filePath
@@ -145,6 +145,12 @@ func (u *ConcurrentUploader) uploadFile(filePath string) {
 
 	u.leaveGroupAndNotifyNextUpload()
 }
+
+
+func (u *ConcurrentUploader) sendError (filePath string, err error) {
+	u.Errors <- fmt.Errorf("Error with '%s': %s\n", filePath, err)
+}
+
 
 func (u *ConcurrentUploader) joinGroupAndWaitForTurn() {
 	u.waitingGroup.Add(1)
