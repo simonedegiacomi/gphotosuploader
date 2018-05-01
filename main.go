@@ -16,6 +16,7 @@ import (
 	"github.com/simonedegiacomi/gphotosuploader/api"
 	"github.com/simonedegiacomi/gphotosuploader/auth"
 	"github.com/simonedegiacomi/gphotosuploader/utils"
+	"github.com/simonedegiacomi/gphotosuploader/version"
 )
 
 var (
@@ -43,7 +44,7 @@ var (
 func main() {
 	parseCliArguments()
 	if printVersion {
-		fmt.Printf("Version:\t%s\nCommit date:\t%s\n", version, versionDate)
+		fmt.Printf("Hash:\t%s\nCommit date:\t%s\n", version.Hash, version.Date)
 		os.Exit(0)
 	}
 
