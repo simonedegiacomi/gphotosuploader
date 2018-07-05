@@ -2,8 +2,7 @@
 [![Build Status](https://travis-ci.org/simonedegiacomi/gphotosuploader.svg?branch=master)](https://travis-ci.org/simonedegiacomi/gphotosuploader)
 
 ## Why? What is this?
-Google Photos does not have a desktop uploader for Linux, neither an API to upload a photo programmatically ... So here
-they are!
+Google Photos does not have a desktop uploader for Linux, ~~neither an API to upload a photo programmatically.~~ (now there is an [Official Google Photos API](https://developers.google.com/photos/)).
 
 G Photos Uploader lets you upload photos from Linux (and, in theory, any OS for which you can compile a Go program)
 specifying the file name or watching a directory for changes.
