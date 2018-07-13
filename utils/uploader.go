@@ -71,7 +71,7 @@ func (u *ConcurrentUploader) AddUploadedFiles(files ...string) {
 // for that use the Errors and CompletedUploads channels
 func (u *ConcurrentUploader) EnqueueUpload(filePath string) error {
 	if u.waiting {
-		return fmt.Errorf("can't add new uploads while waiting queued upload to finish")
+		return fmt.Errorf("can't add new uploads while waiting queued uploads to finish")
 	}
 
 	// We need to use the absolute path of the file, to avoid multiple uploads of the same file if the tool is executed
@@ -98,7 +98,9 @@ func (u *ConcurrentUploader) EnqueueUpload(filePath string) error {
 		return nil
 	}
 
-	go u.uploadFile(filePath)
+	started := make(chan bool)
+	go u.uploadFile(filePath, started)
+	<-started
 
 	return nil
 }
@@ -108,7 +110,8 @@ func (u *ConcurrentUploader) wasFileAlreadyUploaded(filePath string) bool {
 	return uploaded
 }
 
-func (u *ConcurrentUploader) uploadFile(filePath string) {
+func (u *ConcurrentUploader) uploadFile(filePath string, started chan bool) {
+	started <- true
 	u.joinGroupAndWaitForTurn()
 
 	// Open the file
