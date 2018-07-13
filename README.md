@@ -12,6 +12,9 @@ Furthermore, the project can also be used as a library that you can include in o
 G Photos Uploader is an unofficial tool, I (and any possible contributor) don't guarantee any result. Any security or
 other kind of issues are at your own risk.
 
+## Requirements
+To use the tool you need to install [Go](https://golang.org/) and Git (used by ```go get``` to download the dependencies). If you will use the authentication wizard you will also need a WebDriver.
+
 ## Install
 
 ```sh
