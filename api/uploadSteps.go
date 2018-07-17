@@ -18,7 +18,8 @@ const (
 	NewUploadURL = "https://photos.google.com/_/upload/uploadmedia/rupio/interactive?authuser=2"
 
 	// Url to which send the request to enable an uploaded image
-	EnablePhotoUrl = "https://photos.google.com/_/PhotosUi/mutate"
+	//EnablePhotoUrl = "https://photos.google.com/_/PhotosUi/mutate"
+	EnablePhotoUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute?f.sid=blablabla&bl=blablabla&hl=it&soc-app=blablabla&soc-device=1&_reqid=blablabla&rt=c"
 
 	// (Magic) Key to send in the request to enable the image
 	EnablePhotoKey = 137530650
@@ -141,6 +142,7 @@ func (u *Upload) uploadFile() (token string, err error) {
 	}
 
 	// Create the request
+	fmt.Printf("Uploading to %v\n", u.url)
 	req, err := http.NewRequest("POST", u.url, u.Options.Stream)
 	if err != nil {
 		return "", fmt.Errorf("can't create upload URL request: %v", err.Error())
@@ -174,6 +176,7 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 	form := url.Values{}
 
 	// First form field
+	/*
 	mapOfItems := MapOfItemsToEnable{}
 	jsonReq := EnableImageRequest{
 		"af.maf",
@@ -201,7 +204,9 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 	jsonStr, err := json.Marshal(jsonReq)
 	if err != nil {
 		return  "", err
-	}
+	}*/
+	jsonStr := "[[[\"mdpdU\", \"[[[\\\"" + uploadTokenBase64 + "\\\", \\\"" + u.Options.Name + "\\\", " + strconv.Itoa(u.Options.Timestamp) + "]]]\",null,\"generic\"]]]"
+
 
 	// And add it to the form
 	form.Add("f.req", string(jsonStr))
