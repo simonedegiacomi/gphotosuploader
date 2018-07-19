@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"strings"
 	"github.com/buger/jsonparser"
-	"strconv"
 )
 
 const (
@@ -19,7 +18,7 @@ const (
 
 	// Url to which send the request to enable an uploaded image
 	//EnablePhotoUrl = "https://photos.google.com/_/PhotosUi/mutate"
-	EnablePhotoUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute?f.sid=blablabla&bl=blablabla&hl=it&soc-app=blablabla&soc-device=1&_reqid=blablabla&rt=c"
+	EnablePhotoUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute"
 
 	// (Magic) Key to send in the request to enable the image
 	EnablePhotoKey = 137530650
@@ -205,7 +204,8 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 	if err != nil {
 		return  "", err
 	}*/
-	jsonStr := "[[[\"mdpdU\", \"[[[\\\"" + uploadTokenBase64 + "\\\", \\\"" + u.Options.Name + "\\\", " + strconv.Itoa(u.Options.Timestamp) + "]]]\",null,\"generic\"]]]"
+	jsonStr := fmt.Sprintf("[[[\"mdpdU\", \"[[[\\\"%v\\\", \\\"%v\\\", %v]]]\",null,\"generic\"]]]", uploadTokenBase64, u.Options.Name, u.Options.Timestamp)
+	//jsonStr := "[[[\"mdpdU\", \"[[[\\\"" + uploadTokenBase64 + "\\\", \\\"" + u.Options.Name + "\\\", " + strconv.Itoa(u.Options.Timestamp) + "]]]\",null,\"generic\"]]]"
 
 
 	// And add it to the form
@@ -239,6 +239,7 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 	// Skip first characters which are not valid json
 	jsonRes = jsonRes[6:]
 
+	/*
 	u.idToMoveIntoAlbum, err = jsonparser.GetString(jsonRes, "[0]", "[1]", strconv.Itoa(EnablePhotoKey), "[0]", "[0]", "[1]", "[0]")
 	if err != nil {
 		fmt.Println(err)
@@ -248,7 +249,8 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 		return "", err
 	} else {
 		return eUrl, nil
-	}
+	}*/
+	return "", nil
 }
 
 // This method add the image to an existing album given the id

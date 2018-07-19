@@ -126,13 +126,13 @@ func (u *Upload) Upload() (*UploadResult, error) {
 	}
 
 	// Enable the photo
-	uploadedImageURL, err := u.enablePhoto(token)
+	_, err = u.enablePhoto(token)
 	if err != nil {
 		log.Println("[WARNING] Image uploaded but url not found")
 		return &UploadResult{
 			Uploaded: true,
 		}, err
-	}
+	}/*
 	uploadedImageID, err := getImageIDFromURL(uploadedImageURL)
 	if err != nil {
 		log.Println("[WARNING] Image uploaded but url not found")
@@ -140,7 +140,7 @@ func (u *Upload) Upload() (*UploadResult, error) {
 			Uploaded: true,
 			ImageUrl: uploadedImageURL,
 		}, err
-	}
+	}*/
 
 	// Add the image to an album if needed
 	if u.Options.AlbumId != "" {
@@ -150,7 +150,7 @@ func (u *Upload) Upload() (*UploadResult, error) {
 	// No errors, image uploaded!
 	return &UploadResult{
 		Uploaded: true,
-		ImageID:  uploadedImageID,
-		ImageUrl: uploadedImageURL,
+		//ImageID:  uploadedImageID,
+		//ImageUrl: uploadedImageURL,
 	}, nil
 }
