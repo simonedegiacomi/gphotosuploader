@@ -96,7 +96,7 @@ func NewUpload(options *UploadOptions, credentials auth.CookieCredentials) (*Upl
 func getImageIDFromURL(URL string) (string, error) {
 	matches := RegexUploadedImageURL.FindStringSubmatch(URL)
 	if len(matches) != 2 {
-		return "", fmt.Errorf("expected matches to be length 2 (1 submatch only), got %d", len(matches))
+		return "", fmt.Errorf("url doesn't contain the image id")
 	}
 	return matches[1], nil
 }
@@ -116,26 +116,26 @@ func (u *Upload) Upload() (*UploadResult, error) {
 	// First request to get the upload url
 	err := u.requestUploadURL()
 	if err != nil {
-		return &UploadResult{Uploaded: false}, errors.New("can't request an upload url")
+		return &UploadResult{Uploaded: false}, errors.New("can't get an upload url")
 	}
 
 	// Upload the real image file
 	token, err := u.uploadFile()
 	if err != nil {
-		return &UploadResult{Uploaded: false}, errors.New("can't upload file")
+		return &UploadResult{Uploaded: false}, errors.New("can't upload file to the url obtained from the previously request")
 	}
 
 	// Enable the photo
 	uploadedImageURL, err := u.enablePhoto(token)
 	if err != nil {
-		log.Println("[WARNING] Image uploaded but url not found")
+		log.Println("[WARNING] The file has been uploaded, but the image url in the reply was not found. The image may not appear.")
 		return &UploadResult{
 			Uploaded: true,
 		}, err
 	}
 	uploadedImageID, err := getImageIDFromURL(uploadedImageURL)
 	if err != nil {
-		log.Println("[WARNING] Image uploaded but url not found")
+		log.Println("[WARNING] the file has been uploaded, but the image URL does not contain its id. The image may not appear.")
 		return &UploadResult{
 			Uploaded: true,
 			ImageUrl: uploadedImageURL,

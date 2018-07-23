@@ -121,12 +121,11 @@ func (u *Upload) requestUploadURL() error {
 		return responseReadingError()
 	}
 
-
 	u.url, err = jsonparser.GetString(jsonResponse, "sessionStatus", "externalFieldTransfers", "[0]", "putInfo", "url")
 	return err
 }
 
-func responseReadingError () error {
+func responseReadingError() error {
 	return fmt.Errorf("can't read response")
 }
 
@@ -138,7 +137,6 @@ func (u *Upload) uploadFile() (token string, err error) {
 	}
 
 	// Create the request
-	fmt.Printf("Uploading to %v\n", u.url)
 	req, err := http.NewRequest("POST", u.url, u.Options.Stream)
 	if err != nil {
 		return "", fmt.Errorf("can't create upload URL request: %v", err.Error())
@@ -179,11 +177,11 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 	}
 	innerJsonStr, err := json.Marshal(innerJson)
 	if err != nil {
-		return  "", err
+		return "", err
 	}
 
 	jsonReq := []interface{}{
-		[]interface{} {
+		[]interface{}{
 			[]interface{}{
 				"mdpdU",
 				string(innerJsonStr),
@@ -195,7 +193,7 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 
 	jsonStr, err := json.Marshal(jsonReq)
 	if err != nil {
-		return  "", err
+		return "", err
 	}
 
 	// Form that contains the two request field
@@ -210,7 +208,7 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 	// Create the request
 	req, err := http.NewRequest("POST", EnablePhotoUrl, strings.NewReader(form.Encode()))
 	if err != nil {
-		return  "", fmt.Errorf("can't create the request to enable the image: %v", err.Error())
+		return "", fmt.Errorf("can't create the request to enable the image: %v", err.Error())
 	}
 
 	// Add headers
@@ -219,34 +217,41 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 	// Send the request
 	res, err := u.Credentials.Client.Do(req)
 	if err != nil {
-		return  "", fmt.Errorf("error during the request to enable the image: %v", err.Error())
+		return "", fmt.Errorf("error during the request to enable the image: %v", err.Error())
 	}
 	defer res.Body.Close()
 
 	// Read the response as a string
 	jsonRes, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return  "", err
+		return "", responseReadingError()
 	}
 
 	// Skip first characters which are not valid json
 	jsonRes = jsonRes[6:]
 
-	fmt.Printf("Risposta all'attivazione: %v\n", string(jsonRes))
 	innerJsonRes, err := jsonparser.GetString(jsonRes, "[0]", "[2]")
-
+	if err != nil {
+		return "", unexpectedResponse()
+	}
 	eUrl, err := jsonparser.GetString([]byte(innerJsonRes), "[0]", "[0]", "[1]", "[1]", "[0]")
-
-
-
+	if err != nil {
+		return "", unexpectedResponse()
+	}
 	u.idToMoveIntoAlbum, err = jsonparser.GetString([]byte(innerJsonRes), "[0]", "[0]", "[1]", "[0]")
-	fmt.Printf("ID da spostare per l'album: %v\n", u.idToMoveIntoAlbum)
+	if err != nil {
+		return "", unexpectedResponse()
+	}
+
 	if err != nil {
 		fmt.Println(err)
 	}
 
-
 	return eUrl, nil
+}
+
+func unexpectedResponse() error {
+	return fmt.Errorf("unexpected JSON response structure")
 }
 
 // This method add the image to an existing album given the id
@@ -255,26 +260,31 @@ func (u *Upload) moveToAlbum(albumId string) error {
 		return errors.New(fmt.Sprint("can't move image to album without the enabled image id"))
 	}
 
-	form := url.Values{}
-
-	var innerJson [2]interface{}
-	innerJson[0] = [1]string{u.idToMoveIntoAlbum}
-	innerJson[1] = albumId
+	innerJson := [2]interface{}{
+		[1]string{u.idToMoveIntoAlbum},
+		albumId,
+	}
 	innerJsonString, err := json.Marshal(innerJson)
 	if err != nil {
 		return err
 	}
 
-	var jsonReq [1][1][4]interface{}
-	jsonReq[0][0][0] = "E1Cajb" // TODO: Extract a significant constant
-	jsonReq[0][0][1] = string(innerJsonString)
-	jsonReq[0][0][3] = "generic"
+	jsonReq := []interface{}{
+		[]interface{}{
+			[]interface{}{
+				"E1Cajb",
+				string(innerJsonString),
+				"generic",
+			},
+		},
+	}
 	jsonString, err := json.Marshal(jsonReq)
 	if err != nil {
 		return err
 	}
 
-	form.Add("f.req", string(string(jsonString)))
+	form := url.Values{}
+	form.Add("f.req", string(jsonString))
 	form.Add("at", u.Credentials.RuntimeParameters.AtToken)
 
 	req, err := http.NewRequest("POST", MoveToAlbumUrl, strings.NewReader(form.Encode()))

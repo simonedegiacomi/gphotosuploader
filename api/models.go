@@ -36,10 +36,6 @@ type InlinedFieldObject struct {
 	ContentType string `json:"contentType"`
 }
 
-
-/** Models for the request to enable the uploaded image */
-
-
 type ApiTokenContainer struct {
 	Token string `json:"SNlM0e"`
 }
