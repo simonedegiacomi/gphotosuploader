@@ -22,7 +22,7 @@ go get github.com/simonedegiacomi/gphotosuploader
 ## How can I use it?
 ### Standalone tool
 To launch the tool you have two options:
-- Add the $GOPATH/bin folder to your path: doing this you can start the program just typing ```gphotosuploader```;
+- Add the $GOPATH/bin folder to your path: doing this you can start the program just typing ```gphotosuploader``` (if you use this method and don't specify the auth.json and uploaded.txt file paths, these files will be created in the current working directory);
 - Enter the project folder and use ```go run main.go```;
 
 To use G Photos Uploader as a standalone tool you need to be authenticated. Authentication is implemented with a JSON file that contains your cookies and user ID.
