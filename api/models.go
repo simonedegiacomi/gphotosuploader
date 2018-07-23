@@ -36,23 +36,8 @@ type InlinedFieldObject struct {
 	ContentType string `json:"contentType"`
 }
 
-type EnableImageRequest []interface{}
 
-type FirstItemEnableImageRequest []InnerItemFirstItemEnableImageRequest
-
-type InnerItemFirstItemEnableImageRequest interface{}
-
-type SecondInnerArray []MapOfItemsToEnable
-
-type MapOfItemsToEnable map[string]ItemToEnable
-
-type ItemToEnable []ItemToEnableArray
-
-type ItemToEnableArray []InnerItemToEnableArray
-
-type InnerItemToEnableArray interface{}
-
-type EnableImageResponse []interface{}
+/** Models for the request to enable the uploaded image */
 
 
 type ApiTokenContainer struct {

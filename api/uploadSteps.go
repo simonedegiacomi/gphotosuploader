@@ -20,9 +20,6 @@ const (
 	//EnablePhotoUrl = "https://photos.google.com/_/PhotosUi/mutate"
 	EnablePhotoUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute"
 
-	// (Magic) Key to send in the request to enable the image
-	EnablePhotoKey = 137530650
-
 	// Url to move an enabled photo into a specific album
 	MoveToAlbumUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute"
 )
@@ -171,42 +168,38 @@ func (u *Upload) uploadFile() (token string, err error) {
 // Request that enables the image once it gets uploaded
 func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err error) {
 
-	// Form that contains the two request field
-	form := url.Values{}
-
-	// First form field
-	/*
-	mapOfItems := MapOfItemsToEnable{}
-	jsonReq := EnableImageRequest{
-		"af.maf",
-		[]FirstItemEnableImageRequest{
-			[]InnerItemFirstItemEnableImageRequest{
-				"af.add",
-				EnablePhotoKey,
-				SecondInnerArray{
-					mapOfItems,
-				},
-			},
-		},
-	}
-	mapOfItems[strconv.Itoa(EnablePhotoKey)] = ItemToEnable{
-		ItemToEnableArray{
-			[]InnerItemToEnableArray{
+	innerJson := []interface{}{
+		[]interface{}{
+			[]interface{}{
 				uploadTokenBase64,
 				u.Options.Name,
 				u.Options.Timestamp,
 			},
 		},
 	}
+	innerJsonStr, err := json.Marshal(innerJson)
+	if err != nil {
+		return  "", err
+	}
 
-	// Stringify the first field
+	jsonReq := []interface{}{
+		[]interface{} {
+			[]interface{}{
+				"mdpdU",
+				string(innerJsonStr),
+				nil,
+				"generic",
+			},
+		},
+	}
+
 	jsonStr, err := json.Marshal(jsonReq)
 	if err != nil {
 		return  "", err
-	}*/
-	jsonStr := fmt.Sprintf("[[[\"mdpdU\", \"[[[\\\"%v\\\", \\\"%v\\\", %v]]]\",null,\"generic\"]]]", uploadTokenBase64, u.Options.Name, u.Options.Timestamp)
-	//jsonStr := "[[[\"mdpdU\", \"[[[\\\"" + uploadTokenBase64 + "\\\", \\\"" + u.Options.Name + "\\\", " + strconv.Itoa(u.Options.Timestamp) + "]]]\",null,\"generic\"]]]"
+	}
 
+	// Form that contains the two request field
+	form := url.Values{}
 
 	// And add it to the form
 	form.Add("f.req", string(jsonStr))
@@ -239,18 +232,21 @@ func (u *Upload) enablePhoto(uploadTokenBase64 string) (enabledUrl string, err e
 	// Skip first characters which are not valid json
 	jsonRes = jsonRes[6:]
 
-	/*
-	u.idToMoveIntoAlbum, err = jsonparser.GetString(jsonRes, "[0]", "[1]", strconv.Itoa(EnablePhotoKey), "[0]", "[0]", "[1]", "[0]")
+	fmt.Printf("Risposta all'attivazione: %v\n", string(jsonRes))
+	innerJsonRes, err := jsonparser.GetString(jsonRes, "[0]", "[2]")
+
+	eUrl, err := jsonparser.GetString([]byte(innerJsonRes), "[0]", "[0]", "[1]", "[1]", "[0]")
+
+
+
+	u.idToMoveIntoAlbum, err = jsonparser.GetString([]byte(innerJsonRes), "[0]", "[0]", "[1]", "[0]")
+	fmt.Printf("ID da spostare per l'album: %v\n", u.idToMoveIntoAlbum)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	if eUrl, err := jsonparser.GetString(jsonRes, "[0]", "[1]", strconv.Itoa(EnablePhotoKey), "[0]", "[0]", "[1]", "[1]", "[0]"); err != nil {
-		return "", err
-	} else {
-		return eUrl, nil
-	}*/
-	return "", nil
+
+	return eUrl, nil
 }
 
 // This method add the image to an existing album given the id
