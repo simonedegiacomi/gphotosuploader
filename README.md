@@ -1,6 +1,18 @@
 # G Photos Uploader - Beta
 [![Build Status](https://travis-ci.org/simonedegiacomi/gphotosuploader.svg?branch=master)](https://travis-ci.org/simonedegiacomi/gphotosuploader)
 
+<blockquote background-color="red">
+  <p>
+    <b>IMPORTANT NOTICE: </b>as of 2018/09/01 this project is deprecated, since Google now released an official google photos API.
+  </p>
+  <p>
+    <span>For similar projects built on top of the Google photos API check out:</span><br/>
+    <span>https://github.com/nmrshll/gphotos-uploader-cli for a command-line uploader</span><br/>
+    <span>https://github.com/nmrshll/google-photos-api-client-go for a go client library</span>
+  </p>
+</blockquote>
+
+
 ## Why? What is this?
 Google Photos does not have a desktop uploader for Linux, neither an API to upload a photo programmatically ... So here
 they are!
