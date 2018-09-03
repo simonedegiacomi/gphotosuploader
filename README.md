@@ -3,13 +3,14 @@
 
 <blockquote background-color="red">
   <p>
-    <b>IMPORTANT NOTICE: </b>as of 2018/09/01 this project is deprecated, since Google now released an official google photos API.
+    <b>IMPORTANT NOTICE: </b>as of 2018/09/01 this project is going to be deprecated, since Google now released an official google photos API.
   </p>
   <p>
-    <span>For similar projects built on top of the Google photos API check out:</span><br/>
+    <span>The new projects built on top of the Google photos API are:</span><br/>
     <span>https://github.com/nmrshll/gphotos-uploader-cli for a command-line uploader</span><br/>
     <span>https://github.com/nmrshll/google-photos-api-client-go for a go client library</span>
   </p>
+  <p>The new projects currently count against yout storage quota, once the client side compression is implemented this project will be deprecated.</p>
 </blockquote>
 
 
