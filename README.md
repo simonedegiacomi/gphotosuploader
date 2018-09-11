@@ -109,6 +109,11 @@ gphotosuploader --album albumId --upload ./image.png
 Where the albumId is the string that you see in the url when you open the album in the Google Photos Web App
 (something like: https://photos.google.com/u/2/album/album_id)
 
+If you also want create a new album to add your photos, you can use the 'albumName' argument:
+```sh
+gphotosuploader --albumName foo --upload ./image.png
+```
+
 The tool creates a file (default name: uploaded.txt) which is a list of uploaded files, which will not be
 re-uploaded. You can specify your own file using the uploadedList argument.
 To see all the available arguments, use --help.
