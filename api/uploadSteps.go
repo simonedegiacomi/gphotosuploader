@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
 	"github.com/buger/jsonparser"
 )
 
@@ -22,6 +23,9 @@ const (
 
 	// Url to move an enabled photo into a specific album
 	MoveToAlbumUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute"
+
+	// Url to move an enabled photo into a specific album
+	CreateAlbumUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute"
 )
 
 // Method that send a request with the file name and size to generate an upload url.
@@ -301,4 +305,80 @@ func (u *Upload) moveToAlbum(albumId string) error {
 
 	// The image should now be part of the album
 	return nil
+}
+
+// Create Album
+func (u *Upload) createAlbum(albumName string) (string, error) {
+
+	if u.idToMoveIntoAlbum == "" {
+		return "", errors.New(fmt.Sprint("can't create album without the enabled image id"))
+	}
+
+	innerJson := []interface{}{
+		albumName,
+		nil,
+		1,
+		[]interface{}{
+			[]interface{}{
+				[]interface{}{
+					u.idToMoveIntoAlbum,
+				},
+			},
+		},
+	}
+	innerJsonString, err := json.Marshal(innerJson)
+	if err != nil {
+		return "", err
+	}
+	jsonReq := []interface{}{
+		[]interface{}{
+			[]interface{}{
+				"OXvT9d",
+				string(innerJsonString),
+				nil,
+				"generic",
+			},
+		},
+	}
+	jsonString, err := json.Marshal(jsonReq)
+	if err != nil {
+		return "", err
+	}
+
+	form := url.Values{}
+	form.Add("f.req", string(jsonString))
+	form.Add("at", u.Credentials.RuntimeParameters.AtToken)
+
+	req, err := http.NewRequest("POST", CreateAlbumUrl, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("can't create the request to add the image into the album: %v", err.Error())
+	}
+	req.Header.Add("content-type", "application/x-www-form-urlencoded;charset=UTF-8")
+
+	res, err := u.Credentials.Client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error sending the request to move the image: %v", err.Error())
+	}
+	defer res.Body.Close()
+
+	// Read the response as a string
+	jsonRes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", responseReadingError()
+	}
+
+	// Skip first characters which are not valid json
+	jsonRes = jsonRes[6:]
+
+	innerJsonRes, err := jsonparser.GetString(jsonRes, "[0]", "[2]")
+	if err != nil {
+		return "", unexpectedResponse()
+	}
+
+	albumId, err := jsonparser.GetString([]byte(innerJsonRes), "[0]", "[0]")
+	if err != nil {
+		return "", unexpectedResponse()
+	}
+
+	return albumId, nil
 }
