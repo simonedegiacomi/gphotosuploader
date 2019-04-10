@@ -202,6 +202,9 @@ func handleUploaderEvents(exiting chan bool) {
 				file.Close()
 			}
 
+		case info := <-uploader.CreatedAlbum:
+			log.Printf("New album with ID '%v' created\n", info)
+
 		case info := <-uploader.IgnoredUploads:
 			ignoredCount++
 			log.Printf("Not uploading '%v', it's already been uploaded or it's not a image/video!\n", info)

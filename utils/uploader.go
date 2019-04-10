@@ -34,6 +34,7 @@ type ConcurrentUploader struct {
 	waiting bool
 
 	CompletedUploads chan string
+	CreatedAlbum     chan string
 	IgnoredUploads   chan string
 	Errors           chan error
 }
@@ -57,6 +58,7 @@ func NewUploader(credentials auth.CookieCredentials, albumId string, albumName s
 		uploadedFiles: make(map[string]bool),
 
 		CompletedUploads: make(chan string),
+		CreatedAlbum:     make(chan string),
 		IgnoredUploads:   make(chan string),
 		Errors:           make(chan error),
 	}, nil
@@ -149,6 +151,7 @@ func (u *ConcurrentUploader) uploadFile(filePath string, started chan bool) {
 		if uploadRes.AlbumID != "" {
 			u.albumId = uploadRes.AlbumID
 			u.albumName = ""
+			u.CreatedAlbum <- uploadRes.AlbumID
 		}
 		u.uploadedFiles[filePath] = true
 		u.CompletedUploads <- filePath
