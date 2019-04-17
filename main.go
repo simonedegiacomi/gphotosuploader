@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GaPhi/gphotosuploader/api"
+	"github.com/GaPhi/gphotosuploader/utils"
 	"github.com/fsnotify/fsnotify"
-	"github.com/simonedegiacomi/gphotosuploader/api"
 	"github.com/simonedegiacomi/gphotosuploader/auth"
-	"github.com/simonedegiacomi/gphotosuploader/utils"
 	"github.com/simonedegiacomi/gphotosuploader/version"
 )
 
@@ -52,7 +52,17 @@ func main() {
 	credentials := initAuthentication()
 
 	var err error
-	uploader, err = utils.NewUploader(credentials, albumId, albumName, maxConcurrentUploads)
+
+	// Create Album first to get albumId
+	if albumName != "" {
+		albumId, err = api.CreateAlbum(credentials, albumName)
+		if err != nil {
+			log.Fatalf("Can't create album: %v\n", err)
+		}
+		log.Printf("New album with ID '%v' created\n", albumId)
+	}
+
+	uploader, err = utils.NewUploader(credentials, albumId, maxConcurrentUploads)
 	if err != nil {
 		log.Fatalf("Can't create uploader: %v\n", err)
 	}
@@ -115,6 +125,11 @@ func parseCliArguments() {
 	flag.BoolVar(&printVersion, "version", false, "Print version and commit date")
 
 	flag.Parse()
+
+	// Check flags
+	if albumId != "" && albumName != "" {
+		log.Fatalf("Can't use album and albumName at the same time\n")
+	}
 
 	// Convert delay as int into duration
 	eventDelay = time.Duration(*delay) * time.Second
@@ -201,9 +216,6 @@ func handleUploaderEvents(exiting chan bool) {
 				file.WriteString(info + "\n")
 				file.Close()
 			}
-
-		case info := <-uploader.CreatedAlbum:
-			log.Printf("New album with ID '%v' created\n", info)
 
 		case info := <-uploader.IgnoredUploads:
 			ignoredCount++

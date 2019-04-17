@@ -3,9 +3,9 @@
 package utils
 
 import (
-	"os"
-	"gopkg.in/headzoo/surf.v1/errors"
 	"fmt"
+	"gopkg.in/headzoo/surf.v1/errors"
+	"os"
 )
 
 // Slice of name of file and directories to upload
@@ -14,11 +14,11 @@ type FilesToUpload []string
 // Slice of names of directories to watch
 type DirectoriesToWatch []string
 
-func (a *FilesToUpload) String () string {
+func (a *FilesToUpload) String() string {
 	return "File or directory to upload"
 }
 
-func (a *FilesToUpload) Set (name string) error {
+func (a *FilesToUpload) Set(name string) error {
 	if _, err := os.Stat(name); os.IsNotExist(err) {
 		return errors.New(fmt.Sprintf("File or directory '%v' does not exist", name))
 	}
@@ -28,11 +28,11 @@ func (a *FilesToUpload) Set (name string) error {
 	return nil
 }
 
-func (a *DirectoriesToWatch) String () string {
+func (a *DirectoriesToWatch) String() string {
 	return "Directory to watch"
 }
 
-func (a *DirectoriesToWatch) Set (name string) error {
+func (a *DirectoriesToWatch) Set(name string) error {
 	stat, err := os.Stat(name)
 	if err != nil && os.IsNotExist(err) {
 		return errors.New(fmt.Sprintf("Directory '%v' does not exist", name))
@@ -45,4 +45,3 @@ func (a *DirectoriesToWatch) Set (name string) error {
 	*a = append(*a, name)
 	return nil
 }
-

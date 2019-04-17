@@ -1,17 +1,16 @@
 package utils
 
 import (
-	"os"
 	"net/http"
-	"strings"
+	"os"
 	"path"
+	"strings"
 )
 
 const sniffLen = 512
 
-
 // Check if the file at the given path is an image or a video
-func IsImageOrVideo (fileName string) (bool, error) {
+func IsImageOrVideo(fileName string) (bool, error) {
 	extension := path.Ext(fileName)
 	if isExtensionSupported(extension) {
 		return true, nil
@@ -28,7 +27,7 @@ func IsImageOrVideo (fileName string) (bool, error) {
 
 // Check if the file has a image or video mime. This function read the first 512 bytes of the file.
 // Before and after the reading of the file offset is reset
-func IsFileImageOrVideo (file *os.File) (bool, error) {
+func IsFileImageOrVideo(file *os.File) (bool, error) {
 	// Read first 512 bytes
 	file.Seek(0, 0)
 	buffer := make([]byte, sniffLen)
@@ -44,5 +43,3 @@ func IsFileImageOrVideo (file *os.File) (bool, error) {
 
 	return strings.Contains(mime, "image/") || strings.Contains(mime, "video/"), nil
 }
-
-
