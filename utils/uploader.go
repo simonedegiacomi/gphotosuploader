@@ -119,6 +119,7 @@ func (u *ConcurrentUploader) wasFileAlreadyUploaded(filePath string) bool {
 func (u *ConcurrentUploader) uploadFile(filePath string, started chan bool) {
 	started <- true
 	u.joinGroupAndWaitForTurn()
+	defer u.leaveGroupAndNotifyNextUpload()
 
 	// Open the file
 	file, err := os.Open(filePath)
@@ -156,8 +157,6 @@ func (u *ConcurrentUploader) uploadFile(filePath string, started chan bool) {
 		u.uploadedFiles[filePath] = true
 		u.CompletedUploads <- filePath
 	}
-
-	u.leaveGroupAndNotifyNextUpload()
 }
 
 func (u *ConcurrentUploader) sendError(filePath string, err error) {
@@ -168,7 +167,7 @@ func (u *ConcurrentUploader) joinGroupAndWaitForTurn() {
 	u.waitingGroup.Add(1)
 
 	// Insert something in the channel. We remove values from it only when we complete an upload, blocking the
-	// gorutines if we exceed the maxConcurrentUpload
+	// goroutines if we exceed the maxConcurrentUpload
 	u.concurrentLimiter <- true
 }
 
