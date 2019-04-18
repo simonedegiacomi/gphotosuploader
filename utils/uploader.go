@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/simonedegiacomi/gphotosuploader/api"
+	"github.com/GaPhi/gphotosuploader/api"
 	"github.com/simonedegiacomi/gphotosuploader/auth"
 )
 
@@ -17,9 +17,6 @@ type ConcurrentUploader struct {
 
 	// Optional field to specify the destination album
 	albumId string
-
-	// Optional field to specify the name of new album used as destination
-	albumName string
 
 	// Buffered channel to limit concurrent uploads
 	concurrentLimiter chan bool
@@ -34,7 +31,6 @@ type ConcurrentUploader struct {
 	waiting bool
 
 	CompletedUploads chan string
-	CreatedAlbum     chan string
 	IgnoredUploads   chan string
 	Errors           chan error
 }
@@ -43,7 +39,7 @@ type ConcurrentUploader struct {
 // The second argument is the id of the album in which images are going to be added when uploaded. Use an empty string
 // if you don't want to move the images in to a specific album. The third argument is the maximum number of concurrent
 // uploads (which must not be 0).
-func NewUploader(credentials auth.CookieCredentials, albumId string, albumName string, maxConcurrentUploads int) (*ConcurrentUploader, error) {
+func NewUploader(credentials auth.CookieCredentials, albumId string, maxConcurrentUploads int) (*ConcurrentUploader, error) {
 	if maxConcurrentUploads <= 0 {
 		return nil, fmt.Errorf("maxConcurrentUploads must be greater than zero")
 	}
@@ -51,14 +47,12 @@ func NewUploader(credentials auth.CookieCredentials, albumId string, albumName s
 	return &ConcurrentUploader{
 		credentials: credentials,
 		albumId:     albumId,
-		albumName:   albumName,
 
 		concurrentLimiter: make(chan bool, maxConcurrentUploads),
 
 		uploadedFiles: make(map[string]bool),
 
 		CompletedUploads: make(chan string),
-		CreatedAlbum:     make(chan string),
 		IgnoredUploads:   make(chan string),
 		Errors:           make(chan error),
 	}, nil
@@ -119,6 +113,7 @@ func (u *ConcurrentUploader) wasFileAlreadyUploaded(filePath string) bool {
 func (u *ConcurrentUploader) uploadFile(filePath string, started chan bool) {
 	started <- true
 	u.joinGroupAndWaitForTurn()
+	defer u.leaveGroupAndNotifyNextUpload()
 
 	// Open the file
 	file, err := os.Open(filePath)
@@ -135,7 +130,6 @@ func (u *ConcurrentUploader) uploadFile(filePath string, started chan bool) {
 		return
 	}
 	options.AlbumId = u.albumId
-	options.AlbumName = u.albumName
 
 	// Create a new upload
 	upload, err := api.NewUpload(options, u.credentials)
@@ -145,19 +139,12 @@ func (u *ConcurrentUploader) uploadFile(filePath string, started chan bool) {
 	}
 
 	// Try to upload the image
-	if uploadRes, err := upload.Upload(); err != nil {
+	if _, err := upload.Upload(); err != nil {
 		u.sendError(filePath, err)
 	} else {
-		if uploadRes.AlbumID != "" {
-			u.albumId = uploadRes.AlbumID
-			u.albumName = ""
-			u.CreatedAlbum <- uploadRes.AlbumID
-		}
 		u.uploadedFiles[filePath] = true
 		u.CompletedUploads <- filePath
 	}
-
-	u.leaveGroupAndNotifyNextUpload()
 }
 
 func (u *ConcurrentUploader) sendError(filePath string, err error) {
@@ -168,7 +155,7 @@ func (u *ConcurrentUploader) joinGroupAndWaitForTurn() {
 	u.waitingGroup.Add(1)
 
 	// Insert something in the channel. We remove values from it only when we complete an upload, blocking the
-	// gorutines if we exceed the maxConcurrentUpload
+	// goroutines if we exceed the maxConcurrentUpload
 	u.concurrentLimiter <- true
 }
 

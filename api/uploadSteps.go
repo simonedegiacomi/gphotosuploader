@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/buger/jsonparser"
+	"github.com/simonedegiacomi/gphotosuploader/auth"
 )
 
 const (
@@ -356,6 +357,71 @@ func (u *Upload) createAlbum(albumName string) (string, error) {
 	req.Header.Add("content-type", "application/x-www-form-urlencoded;charset=UTF-8")
 
 	res, err := u.Credentials.Client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error sending the request to move the image: %v", err.Error())
+	}
+	defer res.Body.Close()
+
+	// Read the response as a string
+	jsonRes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", responseReadingError()
+	}
+
+	// Skip first characters which are not valid json
+	jsonRes = jsonRes[6:]
+
+	innerJsonRes, err := jsonparser.GetString(jsonRes, "[0]", "[2]")
+	if err != nil {
+		return "", unexpectedResponse()
+	}
+
+	albumId, err := jsonparser.GetString([]byte(innerJsonRes), "[0]", "[0]")
+	if err != nil {
+		return "", unexpectedResponse()
+	}
+
+	return albumId, nil
+}
+
+// Create Album
+func CreateAlbum(credentials auth.CookieCredentials, albumName string) (string, error) {
+	innerJson := []interface{}{
+		albumName,
+		nil,
+		2,
+		[]interface{}{},
+	}
+	innerJsonString, err := json.Marshal(innerJson)
+	if err != nil {
+		return "", err
+	}
+	jsonReq := []interface{}{
+		[]interface{}{
+			[]interface{}{
+				"OXvT9d",
+				string(innerJsonString),
+				nil,
+				"generic",
+			},
+		},
+	}
+	jsonString, err := json.Marshal(jsonReq)
+	if err != nil {
+		return "", err
+	}
+
+	form := url.Values{}
+	form.Add("f.req", string(jsonString))
+	form.Add("at", credentials.RuntimeParameters.AtToken)
+
+	req, err := http.NewRequest("POST", CreateAlbumUrl, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("can't create the request to add the image into the album: %v", err.Error())
+	}
+	req.Header.Add("content-type", "application/x-www-form-urlencoded;charset=UTF-8")
+
+	res, err := credentials.Client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("error sending the request to move the image: %v", err.Error())
 	}

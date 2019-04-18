@@ -37,9 +37,6 @@ type UploadOptions struct {
 
 	// Optional album id
 	AlbumId string
-
-	// Optional album name
-	AlbumName string
 }
 
 // NewUploadOptionsFromFile creates a new UploadOptions from a file
@@ -109,7 +106,6 @@ type UploadResult struct {
 	Uploaded bool
 	ImageID  string
 	ImageUrl string
-	AlbumID  string
 }
 
 func (ur *UploadResult) URLString() string {
@@ -152,25 +148,10 @@ func (u *Upload) Upload() (*UploadResult, error) {
 		u.moveToAlbum(u.Options.AlbumId)
 	}
 
-	createdAlbumID := ""
-	// Create album and add the image if needed
-	if u.Options.AlbumName != "" {
-		createdAlbumID, err = u.createAlbum(u.Options.AlbumName)
-		if err != nil {
-			log.Println("[WARNING] the file has been uploaded, but the album hasn't been created.")
-			return &UploadResult{
-				Uploaded: true,
-				ImageID:  uploadedImageID,
-				ImageUrl: uploadedImageURL,
-			}, err
-		}
-	}
-
 	// No errors, image uploaded!
 	return &UploadResult{
 		Uploaded: true,
 		ImageID:  uploadedImageID,
 		ImageUrl: uploadedImageURL,
-		AlbumID:  createdAlbumID,
 	}, nil
 }

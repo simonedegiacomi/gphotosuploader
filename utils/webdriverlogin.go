@@ -28,7 +28,7 @@ func StartWebDriverCookieCredentialsWizard() (*auth.CookieCredentials, error) {
 		return nil, err
 	}
 
-	cookies , err := extractCookies(webDriver)
+	cookies, err := extractCookies(webDriver)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func instructUserAndWaitForLogin(webDriver selenium.WebDriver) error {
 	return nil
 }
 
-func extractCookies (webDriver selenium.WebDriver) ([]*http.Cookie, error)  {
+func extractCookies(webDriver selenium.WebDriver) ([]*http.Cookie, error) {
 	// Get cookies from browser
 	seleniumCookies, err := webDriver.GetCookies()
 	if err != nil {
@@ -107,7 +107,7 @@ func SeleniumToGoCookie(seleniumCookie selenium.Cookie) *http.Cookie {
 	}
 }
 
-func extractUserId (webDriver selenium.WebDriver) (string, error) {
+func extractUserId(webDriver selenium.WebDriver) (string, error) {
 	// Get the user id
 	res, err := webDriver.ExecuteScript(`return { id: window.WIZ_global_data.S06Grb } `, nil)
 	if err != nil {

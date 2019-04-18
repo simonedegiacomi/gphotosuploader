@@ -41,7 +41,6 @@ var supportedExtensions = [...]string{
 	".mkv",
 }
 
-
 func isExtensionSupported(toCheck string) bool {
 	for _, extension := range supportedExtensions {
 		if toCheck == extension {
