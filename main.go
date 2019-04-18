@@ -12,8 +12,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GaPhi/gphotosuploader/api"
-	"github.com/GaPhi/gphotosuploader/utils"
+	"github.com/simonedegiacomi/gphotosuploader/api"
+	"github.com/simonedegiacomi/gphotosuploader/utils"
 	"github.com/fsnotify/fsnotify"
 	"github.com/simonedegiacomi/gphotosuploader/auth"
 	"github.com/simonedegiacomi/gphotosuploader/version"

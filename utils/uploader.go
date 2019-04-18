@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/GaPhi/gphotosuploader/api"
+	"github.com/simonedegiacomi/gphotosuploader/api"
 	"github.com/simonedegiacomi/gphotosuploader/auth"
 )
 
