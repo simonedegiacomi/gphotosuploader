@@ -117,7 +117,7 @@ func (u *Upload) Upload() (*UploadResult, error) {
 	// First request to get the upload url
 	err := u.requestUploadURL()
 	if err != nil {
-		return &UploadResult{Uploaded: false}, errors.New("can't get an upload url")
+		return &UploadResult{Uploaded: false}, errors.New("can't get an upload url. Try to wait about 24h before a new attempt or refer to this issue: https://github.com/simonedegiacomi/gphotosuploader/issues/31")
 	}
 
 	// Upload the real image file
