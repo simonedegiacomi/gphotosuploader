@@ -3,7 +3,7 @@
 
 <blockquote background-color="red">
   <p>
-    <b>IMPORTANT NOTICE: this project has been deprecated, since Google now released an official google photos API.
+    <b>IMPORTANT NOTICE: this project has been deprecated</b>, since Google now released an official google photos API.
   </p>
   <p>
     <span>New projects built on top of the Google photos API are:</span><br/>
