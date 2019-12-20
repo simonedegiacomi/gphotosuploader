@@ -1,12 +1,12 @@
-# G Photos Uploader - Beta
+# G Photos Uploader - Deprecated
 [![Build Status](https://travis-ci.org/simonedegiacomi/gphotosuploader.svg?branch=master)](https://travis-ci.org/simonedegiacomi/gphotosuploader)
 
 <blockquote background-color="red">
   <p>
-    <b>IMPORTANT NOTICE: </b>as of 2018/09/01 this project is going to be deprecated, since Google now released an official google photos API.
+    <b>IMPORTANT NOTICE: this project has been deprecated, since Google now released an official google photos API.
   </p>
   <p>
-    <span>The new projects built on top of the Google photos API are:</span><br/>
+    <span>New projects built on top of the Google photos API are:</span><br/>
     <span>https://github.com/nmrshll/gphotos-uploader-cli for a command-line uploader</span><br/>
     <span>https://github.com/nmrshll/google-photos-api-client-go for a go client library</span>
   </p>
