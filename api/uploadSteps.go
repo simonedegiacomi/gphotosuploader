@@ -27,6 +27,9 @@ const (
 
 	// Url to move an enabled photo into a specific album
 	CreateAlbumUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute"
+
+	// Url to share a specific album with a specific Google userId
+	ShareAlbumUrl = "https://photos.google.com/u/2/_/PhotosUi/data/batchexecute"
 )
 
 // Method that send a request with the file name and size to generate an upload url.
@@ -447,4 +450,121 @@ func CreateAlbum(credentials auth.CookieCredentials, albumName string) (string, 
 	}
 
 	return albumId, nil
+}
+
+// Share Album
+func ShareWithUserId(credentials auth.CookieCredentials, albumId string, shareWithUserId string) (string, error) {
+	innerJson := []interface{}{
+		nil,
+		nil,
+		[]interface{}{
+			nil,
+			true,
+			nil,
+			nil,
+			true,
+			nil,
+			[]interface{}{
+				[]interface{}{ []interface{}{ 1, 1 }, true },
+				[]interface{}{ []interface{}{ 1, 2 }, true },
+				[]interface{}{ []interface{}{ 2, 1 }, true },
+				[]interface{}{ []interface{}{ 2, 2 }, true },
+				[]interface{}{ []interface{}{ 3, 1 }, false },
+			},
+		},
+		[]interface{}{
+			1,
+			[]interface{}{ []interface{}{ albumId }, []interface{}{ 1, 2, 3 } },
+			[]interface{}{},
+			nil,
+			nil,
+			[]interface{}{},
+			[]interface{}{ 1 },
+			nil,
+			nil,
+			nil,
+			[]interface{}{
+			},
+		},
+		nil,
+		[]interface{}{
+			[]interface{}{
+				[]interface{}{
+					[]interface{}{ 2, shareWithUserId },
+					nil,
+					nil,
+					nil,
+					nil,
+					[]interface{}{
+						2,
+						shareWithUserId,
+						[]interface{}{
+							nil,
+							shareWithUserId,
+							0,
+							nil,
+						},
+					},
+				},
+			},
+		},
+		nil,
+		nil,
+		[]interface{}{ 1, 2, 3 },
+	}
+	innerJsonString, err := json.Marshal(innerJson)
+	if err != nil {
+		return "", err
+	}
+	jsonReq := []interface{}{
+		[]interface{}{
+			[]interface{}{
+				"SFKp8c",
+				string(innerJsonString),
+				nil,
+				"generic",
+			},
+		},
+	}
+	jsonString, err := json.Marshal(jsonReq)
+	if err != nil {
+		return "", err
+	}
+
+	form := url.Values{}
+	form.Add("f.req", string(jsonString))
+	form.Add("at", credentials.RuntimeParameters.AtToken)
+
+	req, err := http.NewRequest("POST", CreateAlbumUrl, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", fmt.Errorf("can't create the request to share the album: %v", err.Error())
+	}
+	req.Header.Add("content-type", "application/x-www-form-urlencoded;charset=UTF-8")
+
+	res, err := credentials.Client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error sending the request to share the album: %v", err.Error())
+	}
+	defer res.Body.Close()
+
+	// Read the response as a string
+	jsonRes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", responseReadingError()
+	}
+
+	// Skip first characters which are not valid json
+	jsonRes = jsonRes[6:]
+
+	innerJsonRes, err := jsonparser.GetString(jsonRes, "[0]", "[2]")
+	if err != nil {
+		return "", unexpectedResponse()
+	}
+
+	sharedAlbumId, err := jsonparser.GetString([]byte(innerJsonRes), "[0]")
+	if err != nil {
+		return "", unexpectedResponse()
+	}
+
+	return sharedAlbumId, nil
 }
